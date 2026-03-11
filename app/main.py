@@ -9,6 +9,7 @@ from uuid import uuid4
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import get_current_account, session_expiry, verify_password
@@ -22,6 +23,7 @@ from app.models import (
     HealthResponse,
     IntakePayload,
     IntegrationCheckResponse,
+    RuntimeSettingsResponse,
     IntegrationStatusResponse,
     LoginRequest,
     OverviewMetric,
@@ -59,6 +61,15 @@ def create_app() -> FastAPI:
     configure_logging(settings.log_format)
     setup_observability(settings)
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["X-Request-Id", "X-Trace-Id"],
+    )
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.session_secret,
@@ -205,6 +216,10 @@ def create_app() -> FastAPI:
     @app.get("/api/integrations", response_model=IntegrationStatusResponse)
     async def integrations(current_account=Depends(get_current_account)) -> IntegrationStatusResponse:
         return integration_manager.status()
+
+    @app.get("/api/integrations/runtime", response_model=RuntimeSettingsResponse)
+    async def integrations_runtime(current_account=Depends(get_current_account)) -> RuntimeSettingsResponse:
+        return integration_manager.runtime_settings()
 
     @app.post("/api/integrations/check", response_model=IntegrationCheckResponse)
     async def integrations_check(current_account=Depends(get_current_account)) -> IntegrationCheckResponse:

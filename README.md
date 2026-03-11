@@ -1,176 +1,215 @@
 # RelayOps
 
-RelayOps is an AI-powered workflow and integration layer for operations teams working across fragmented business systems. It accepts messy inbound records, normalizes them into a consistent internal schema, orchestrates decision logic, and produces action-ready operational briefs with audit, sync, and observability visibility.
+RelayOps is an operations workflow platform that connects fragmented business inputs, structures the data, orchestrates follow-up actions, and tracks downstream execution across connected systems.
 
-## Product summary
+It is built as a real product-shaped portfolio project:
 
-RelayOps models a realistic operations workflow:
+- Next.js frontend with protected routes
+- FastAPI backend for workflow orchestration and integrations
+- SQLite persistence with automatic local recovery
+- session-based auth plus API-key access
+- queued background processing for provider work
+- integration diagnostics, runtime configuration visibility, and observability
 
-- inbound webhook or intake payload arrives from a client system
-- inconsistent fields are normalized into a clean internal schema
-- workflow logic scores urgency and generates next actions
-- the system produces an operational brief plus structured AI analysis
-- background jobs handle AI enrichment and downstream sync work
-- workflow history, sessions, jobs, and diagnostics are persisted in SQLite
+## Product Overview
 
-## Features
+RelayOps is designed for teams that work across multiple systems and need one place to:
 
-- Webhook-style intake for fragmented business payloads
-- Normalization layer for inconsistent fields and incomplete data
-- Workflow scoring, action generation, and AI analysis
-- Persistent run history backed by SQLite
-- Formal Alembic migrations for schema creation and upgrades
-- Session-based auth with cookie login plus API-key overrides
-- Persisted background job queue with retries, leases, and worker mode
-- Health reporting, audit trail, and sync visibility
-- Prometheus metrics, tracing hooks, and optional Sentry error reporting
-- Request throttling for API abuse protection
-- Optional live integrations for OpenAI, Slack, and HubSpot
-- Dedicated settings page for connector diagnostics and setup guidance
-- Playwright browser tests for live UI flows
+- intake operational requests
+- normalize messy inbound data
+- score urgency and recommend next actions
+- generate clear workflow summaries
+- track integration outcomes across CRM, communication, and finance systems
+
+## Current Application Flow
+
+- `/` landing page
+- `/signin` workspace sign-in and workspace creation
+- `/dashboard` protected operational workspace
+- `/settings` protected integration status and runtime configuration
+- `/metrics` Prometheus metrics endpoint
+
+## Core Capabilities
+
+- Structured workflow intake with typed request models
+- Data normalization for inconsistent real-world payloads
+- Workflow scoring and action generation
+- AI-assisted summary enrichment
+- Persistent workflow history and sync visibility
+- Session auth with cookie-backed access
+- API-key access for machine-to-machine requests
+- Background job queue with retries and worker mode
+- Integration status, runtime config visibility, and diagnostics
+- Request throttling, request IDs, tracing hooks, and optional Sentry support
 
 ## Architecture
 
-- `app/main.py`: FastAPI app, middleware, auth routes, API routes, and static file serving
-- `app/models.py`: typed request and response contracts
-- `app/services.py`: normalization logic, workflow engine, audit events, and sync simulation
-- `app/repository.py`: SQLite-backed workflow, account, session, and job persistence
-- `app/migrations.py`: Alembic runner used during startup
-- `alembic/`: migration environment and revision history
-- `app/auth.py`: password hashing, session expiry, and account resolution
-- `app/jobs.py`: persisted background job processing with retries and worker leases
-- `app/worker.py`: standalone worker process for queued integration jobs
-- `app/observability.py`: metrics, tracing, error reporting, and rate limiting primitives
-- `app/config.py`: runtime settings for app configuration
-- `static/index.html`: product dashboard and live workflow shell
-- `static/settings.html`: connector diagnostics view
-- `static/app.js`: session UX, workflow execution, and dashboard rendering
-- `frontend-tests/`: Playwright end-to-end browser suite
-- `tests/test_app.py`: backend validation suite
+### Frontend
 
-## Demo flow
+- `web/src/app/page.tsx`: landing page
+- `web/src/app/signin/page.tsx`: sign-in route
+- `web/src/app/dashboard/page.tsx`: protected dashboard route
+- `web/src/app/settings/page.tsx`: protected settings route
+- `web/src/app/api/[...path]/route.ts`: same-origin proxy from Next.js to FastAPI
+- `web/src/components/`: UI shells for landing, sign-in, dashboard, and settings
+- `web/src/lib/relayops.ts`: frontend API client
+- `web/src/lib/session.ts`: route protection helpers
 
-1. A webhook or intake payload arrives from a client system.
-2. The backend normalizes inconsistent field names and missing values.
-3. The workflow engine scores urgency, determines actions, and composes an operational brief.
-4. Integration work is queued as persisted background jobs instead of running inline in the request.
-5. Optional integrations enrich the run with live summaries and downstream sync attempts.
-6. The dashboard visualizes recent runs, audit events, health, sync outcomes, and workspace context.
+### Backend
 
-## Stack
+- `app/main.py`: FastAPI app, auth, APIs, middleware, metrics, and lifecycle
+- `app/models.py`: request, response, run, job, and integration models
+- `app/services.py`: normalization and workflow generation
+- `app/repository.py`: SQLite persistence for accounts, sessions, runs, and jobs
+- `app/jobs.py`: queue processing and retry handling
+- `app/worker.py`: standalone worker entry point
+- `app/integrations.py`: OpenAI, Slack, and HubSpot integration logic
+- `app/auth.py`: session and API-key account resolution
+- `app/observability.py`: metrics, tracing, rate limiting, and error reporting
+- `app/config.py`: runtime settings and `.env` loading
+- `alembic/`: database migration environment and revisions
 
-- Python 3.11+
-- FastAPI
-- SQLite
-- Alembic
-- OpenTelemetry
-- Prometheus client
-- Sentry SDK
-- Vanilla HTML/CSS/JS
-- Playwright
+## Local Development
 
-## Run locally
+### 1. Backend
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8012
+uvicorn app.main:app --host 127.0.0.1 --port 8022
 ```
 
-Then open `http://127.0.0.1:8012`.
+### 2. Frontend
 
-Available pages:
+```bash
+cd web
+npm install
+RELAYOPS_BACKEND_URL=http://127.0.0.1:8022 npm run dev -- --port 3006
+```
 
-- `/` product dashboard
-- `/settings` integration settings and connector diagnostics
-- `/metrics` Prometheus metrics endpoint
+Open:
 
-Demo account:
+- [http://localhost:3006](http://localhost:3006)
 
-- default workspace: `RelayOps Demo Workspace`
-- default email: `demo@relayops.app`
-- default password: `relayops-demo-pass`
-- default API key: `relayops-demo-key`
+Recommended local routes:
 
-## Authentication model
+- [http://localhost:3006/](http://localhost:3006/)
+- [http://localhost:3006/signin](http://localhost:3006/signin)
+- [http://localhost:3006/dashboard](http://localhost:3006/dashboard)
+- [http://localhost:3006/settings](http://localhost:3006/settings)
 
-- browser users sign in through `POST /api/auth/login`, which creates an HttpOnly session cookie
-- new local workspaces can be created with `POST /api/auth/register`
-- `POST /api/auth/logout` clears the current session
-- machine-to-machine clients can use `X-RelayOps-Api-Key`
-- if neither session nor API key is present, the local UI falls back to the seeded demo workspace
+## Default Local Account
 
-To run migrations manually:
+- workspace: `RelayOps Demo Workspace`
+- email: `demo@relayops.app`
+- password: `relayops-demo-pass`
+- API key: `relayops-demo-key`
+
+## Authentication Model
+
+- browser users sign in through `POST /api/auth/login`
+- successful login creates an HttpOnly session cookie
+- protected Next routes require a valid session
+- `POST /api/auth/register` creates a new workspace and signs the user in
+- `POST /api/auth/logout` clears the session
+- backend APIs also accept `X-RelayOps-Api-Key` for non-browser usage
+
+## Integrations
+
+RelayOps currently supports these provider paths:
+
+- OpenAI
+- Slack incoming webhooks
+- HubSpot CRM
+
+Configuration is read from `.env` or process environment variables:
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `SLACK_WEBHOOK_URL`
+- `HUBSPOT_PRIVATE_APP_TOKEN`
+- `HUBSPOT_BASE_URL`
+
+The settings page shows:
+
+- provider availability
+- diagnostic results
+- masked runtime configuration values
+
+## Worker Mode
+
+By default, queued jobs can be processed by the web process in local development.
+
+For a split web/worker setup:
+
+```bash
+export RELAYOPS_RUN_JOBS_IN_WEB=0
+uvicorn app.main:app --host 127.0.0.1 --port 8022
+python -m app.worker
+```
+
+Relevant settings:
+
+- `RELAYOPS_RUN_JOBS_IN_WEB`
+- `RELAYOPS_WORKER_POLL_INTERVAL_MS`
+- `RELAYOPS_RATE_LIMIT_PER_MINUTE`
+- `RELAYOPS_SESSION_SECRET`
+- `RELAYOPS_SESSION_MAX_AGE_SECONDS`
+- `RELAYOPS_LOG_FORMAT`
+- `RELAYOPS_TRACE_EXPORTER`
+- `RELAYOPS_OTLP_ENDPOINT`
+- `SENTRY_DSN`
+
+## Database and Migrations
+
+RelayOps uses SQLite locally and applies Alembic migrations on startup.
+
+Run migrations manually:
 
 ```bash
 alembic upgrade head
 ```
 
-## Worker mode
+If the local SQLite file is corrupted, RelayOps now automatically:
 
-RelayOps supports two queue-processing modes:
+- renames the broken database file with a `.corrupt-*` suffix
+- creates a fresh local database
+- boots normally instead of crashing on startup
 
-- default dev mode: the web process also processes jobs
-- worker mode: disable job execution in web and run a separate worker process
+## Validation
 
-Run with a separate worker:
+Backend:
 
 ```bash
-export RELAYOPS_RUN_JOBS_IN_WEB=0
-uvicorn app.main:app --reload --port 8012
-python -m app.worker
+python3 -m unittest discover -s tests -v
+python3 -m compileall app tests
 ```
 
-Operational settings:
+Frontend:
 
-- `RELAYOPS_RUN_JOBS_IN_WEB`: `1` or `0`
-- `RELAYOPS_WORKER_POLL_INTERVAL_MS`: worker polling interval in milliseconds
-- `RELAYOPS_RATE_LIMIT_PER_MINUTE`: API requests allowed per identity per minute
-- `RELAYOPS_SESSION_SECRET`: cookie-signing secret
-- `RELAYOPS_SESSION_MAX_AGE_SECONDS`: browser session lifetime
-- `RELAYOPS_LOG_FORMAT`: `text` or `json`
-- `RELAYOPS_TRACE_EXPORTER`: `disabled`, `console`, or `otlp`
-- `RELAYOPS_OTLP_ENDPOINT`: OTLP HTTP exporter endpoint when tracing is set to `otlp`
-- `SENTRY_DSN`: enables Sentry error reporting
+```bash
+cd web
+npm run lint
+npm run build
+```
 
-## Optional live integrations
+## Key API Endpoints
 
-RelayOps supports optional live integrations through environment variables. Copy `.env.example` values into your local environment before starting the app.
+- `GET /api/account`
+- `GET /api/overview`
+- `GET /api/health`
+- `GET /api/integrations`
+- `GET /api/integrations/runtime`
+- `POST /api/integrations/check`
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `POST /api/auth/logout`
+- `POST /api/workflows/execute`
+- `POST /api/webhooks/intake`
+- `GET /metrics`
 
-- `OPENAI_API_KEY`: enables OpenAI-generated operational summaries
-- `OPENAI_MODEL`: optional OpenAI model override
-- `SLACK_WEBHOOK_URL`: enables Slack incoming webhook notifications
-- `HUBSPOT_PRIVATE_APP_TOKEN`: enables HubSpot CRM contact sync
-- `HUBSPOT_BASE_URL`: optional HubSpot API base URL override
-
-If these variables are not set, the app keeps deterministic local behavior and marks integrations as disabled in the UI.
-
-## Observability
-
-- `GET /metrics`: Prometheus-compatible request and job metrics
-- request tracing: enabled through OpenTelemetry when `RELAYOPS_TRACE_EXPORTER` is configured
-- error reporting: optional Sentry integration through `SENTRY_DSN`
-- response headers: every request includes `X-Request-Id` and `X-Trace-Id`
-
-## Workflow and job statuses
-
-Workflow run statuses:
-
-- `queued`: the request was accepted and integration work was added to the persisted job queue
-- `completed`: all queued integration jobs finished successfully
-- `degraded`: the workflow finished, but one or more integration jobs failed
-
-Job statuses:
-
-- `pending`: waiting to be processed
-- `processing`: claimed by a worker lease
-- `completed`: processed successfully
-- `failed`: processing exhausted retries and the workflow was marked degraded
-
-## Example payloads
-
-Direct workflow execution:
+## Example Workflow Request
 
 ```json
 {
@@ -186,102 +225,23 @@ Direct workflow execution:
 }
 ```
 
-Webhook intake with inconsistent field names:
-
-```json
-{
-  "source": "typeform",
-  "payload": {
-    "company_name": "Cairo Service Desk",
-    "full_name": "Nour Tarek",
-    "work_email": "nour@example.com",
-    "issues": "Manual reporting, missing visibility",
-    "requestedTools": ["HubSpot", "Slack"],
-    "priority": "urgent",
-    "brief": "Needs better routing."
-  }
-}
-```
-
-Example local request with API key:
-
-```bash
-curl -X POST http://127.0.0.1:8012/api/workflows/execute \
-  -H "Content-Type: application/json" \
-  -H "X-RelayOps-Api-Key: relayops-demo-key" \
-  -d @payload.json
-```
-
-## Validate locally
-
-```bash
-python3 -m unittest discover -s tests -v
-python3 -m compileall app tests
-npm install
-npm run test:e2e
-```
-
-The browser suite validates:
-
-- session login and workspace-aware dashboard rendering
-- workflow submission from the UI
-- connector diagnostics from `/settings`
-
-## Quality gates
-
-- backend tests via `unittest`
-- frontend browser tests via Playwright
-- bytecode/import validation via `compileall`
-- GitHub Actions workflow for backend and frontend validation
-
 ## Troubleshooting
 
-- `401 Unauthorized` from `/api/account` or workflow endpoints:
-  sign in again, clear the stored browser workspace key, or send a valid `X-RelayOps-Api-Key` header
-- `429 Too Many Requests` from API routes:
-  lower the request frequency or increase `RELAYOPS_RATE_LIMIT_PER_MINUTE` for local testing
-- HubSpot shows `misconfigured` in `/settings`:
-  confirm the private app token is valid and includes CRM contact scopes
-- Slack shows `misconfigured`:
-  verify `SLACK_WEBHOOK_URL` starts with `https://hooks.slack.com/services/`
-- OpenAI checks fail:
-  confirm `OPENAI_API_KEY` is valid and the configured `OPENAI_MODEL` is reachable
-- Old local database causes schema errors:
-  run `alembic upgrade head` or restart the app so Alembic applies the latest revisions
+- `401 Unauthorized`
+  - sign in again or verify the API key being sent
+- `429 Too Many Requests`
+  - reduce request volume or increase `RELAYOPS_RATE_LIMIT_PER_MINUTE` locally
+- provider shown as `disabled`
+  - check the corresponding env var in `.env`
+- provider shown as `misconfigured`
+  - verify the live credential or webhook format
+- local startup fails because of SQLite corruption
+  - restart the backend and allow the automatic recovery path to recreate the local database
 
-## Key endpoints
+## Repository Layout
 
-- `GET /api/overview`
-- `GET /api/health`
-- `GET /api/account`
-- `POST /api/auth/login`
-- `POST /api/auth/register`
-- `POST /api/auth/logout`
-- `GET /api/integrations`
-- `GET /api/jobs`
-- `POST /api/integrations/check`
-- `POST /api/webhooks/intake`
-- `POST /api/workflows/execute`
-- `GET /api/runs`
-- `GET /metrics`
-
-## Product layers now included
-
-- Intake layer: webhook-style ingestion for raw business payloads
-- Normalization layer: alias mapping and messy-data cleanup
-- Workflow layer: scoring, action generation, and brief creation
-- Persistence layer: SQLite-backed workflow, session, and job history
-- Migration layer: Alembic-managed schema revisions
-- Account layer: session login, workspace creation, and API-key resolution
-- Queue layer: durable job records with retries and worker leases
-- Ops layer: health reporting, audit events, and sync result tracking
-- Observability layer: Prometheus metrics, tracing hooks, and Sentry integration
-- Protection layer: rate limiting for API abuse control
-- Presentation layer: SaaS-style product interface with live workflow execution
-
-## Use cases
-
-- Lead and operations intake across multiple tools
-- Internal service delivery orchestration
-- AI-assisted summaries for operations teams
-- Downstream notifications and CRM sync visibility
+- [app](/Volumes/PortableSSD/world/h6/app)
+- [alembic](/Volumes/PortableSSD/world/h6/alembic)
+- [tests](/Volumes/PortableSSD/world/h6/tests)
+- [web](/Volumes/PortableSSD/world/h6/web)
+- [.env.example](/Volumes/PortableSSD/world/h6/.env.example)

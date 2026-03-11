@@ -7,7 +7,16 @@ from uuid import uuid4
 import httpx
 
 from app.config import Settings
-from app.models import AuditEvent, IntegrationCheckResponse, IntegrationStatus, IntegrationStatusResponse, SyncResult, WorkflowRun
+from app.models import (
+    AuditEvent,
+    IntegrationCheckResponse,
+    IntegrationSecretPreview,
+    IntegrationStatus,
+    IntegrationStatusResponse,
+    RuntimeSettingsResponse,
+    SyncResult,
+    WorkflowRun,
+)
 
 
 class IntegrationManager:
@@ -50,6 +59,47 @@ class IntegrationManager:
             ),
         ]
         return IntegrationStatusResponse(items=items)
+
+    def runtime_settings(self) -> RuntimeSettingsResponse:
+        return RuntimeSettingsResponse(
+            items=[
+                IntegrationSecretPreview(
+                    provider="OpenAI",
+                    env_var="OPENAI_API_KEY",
+                    configured=bool(self.settings.openai_api_key),
+                    preview=self._mask_secret(self.settings.openai_api_key),
+                    source=".env or process environment",
+                ),
+                IntegrationSecretPreview(
+                    provider="OpenAI Model",
+                    env_var="OPENAI_MODEL",
+                    configured=bool(self.settings.openai_model),
+                    preview=self.settings.openai_model,
+                    source=".env or process environment",
+                ),
+                IntegrationSecretPreview(
+                    provider="Slack",
+                    env_var="SLACK_WEBHOOK_URL",
+                    configured=bool(self.settings.slack_webhook_url),
+                    preview=self._mask_url(self.settings.slack_webhook_url),
+                    source=".env or process environment",
+                ),
+                IntegrationSecretPreview(
+                    provider="HubSpot",
+                    env_var="HUBSPOT_PRIVATE_APP_TOKEN",
+                    configured=bool(self.settings.hubspot_private_app_token),
+                    preview=self._mask_secret(self.settings.hubspot_private_app_token),
+                    source=".env or process environment",
+                ),
+                IntegrationSecretPreview(
+                    provider="HubSpot Base URL",
+                    env_var="HUBSPOT_BASE_URL",
+                    configured=bool(self.settings.hubspot_base_url),
+                    preview=self.settings.hubspot_base_url,
+                    source=".env or process environment",
+                ),
+            ]
+        )
 
     async def check_integrations(self) -> IntegrationCheckResponse:
         return IntegrationCheckResponse(
@@ -320,6 +370,22 @@ class IntegrationManager:
 
     def _provider_detail(self, provider: str, fallback: str) -> str:
         return self.provider_diagnostics.get(provider, ("", fallback))[1] or fallback
+
+    @staticmethod
+    def _mask_secret(value: str | None) -> str:
+        if not value:
+            return "Not loaded"
+        if len(value) <= 10:
+            return "*" * len(value)
+        return f"{value[:6]}...{value[-4:]}"
+
+    @staticmethod
+    def _mask_url(value: str | None) -> str:
+        if not value:
+            return "Not loaded"
+        if len(value) <= 24:
+            return IntegrationManager._mask_secret(value)
+        return f"{value[:24]}...{value[-8:]}"
 
     async def _check_openai_status(self) -> IntegrationStatus:
         if not self.settings.openai_api_key:

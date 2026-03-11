@@ -155,6 +155,18 @@ class IntegrationCheckResponse(BaseModel):
     items: list[IntegrationStatus]
 
 
+class IntegrationSecretPreview(BaseModel):
+    provider: str
+    env_var: str
+    configured: bool
+    preview: str
+    source: str
+
+
+class RuntimeSettingsResponse(BaseModel):
+    items: list[IntegrationSecretPreview]
+
+
 class AccountResponse(BaseModel):
     account: Account
     auth_mode: str = "api_key"

@@ -8,6 +8,8 @@ import json
 
 import httpx
 
+os.environ["RELAYOPS_LOAD_DOTENV"] = "0"
+
 from app.main import create_app
 from app.models import WorkflowRun
 from app.config import get_settings
@@ -20,12 +22,14 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         os.environ["RELAYOPS_DB_PATH"] = f"{self.temp_dir.name}/test.db"
         os.environ["RELAYOPS_TRACE_EXPORTER"] = "disabled"
+        os.environ["RELAYOPS_LOAD_DOTENV"] = "0"
         self.app = create_app()
         self.repository = self.app.state.repository
 
     def tearDown(self) -> None:
         os.environ.pop("RELAYOPS_DB_PATH", None)
         os.environ.pop("RELAYOPS_TRACE_EXPORTER", None)
+        os.environ.pop("RELAYOPS_LOAD_DOTENV", None)
         os.environ.pop("RELAYOPS_RUN_JOBS_IN_WEB", None)
         os.environ.pop("RELAYOPS_RATE_LIMIT_PER_MINUTE", None)
         self.temp_dir.cleanup()

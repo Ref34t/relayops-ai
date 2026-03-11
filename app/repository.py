@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 from contextlib import closing
 from datetime import timedelta
@@ -15,12 +16,13 @@ from app.services import WorkflowEngine
 
 class WorkflowRepository:
     def __init__(self, database_path: Path, demo_api_key: str, demo_email: str, demo_password: str) -> None:
+        self.logger = logging.getLogger("relayops.repository")
         self.database_path = database_path
         self.demo_api_key = demo_api_key
         self.demo_email = demo_email
         self.demo_password = demo_password
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        self._initialize()
+        self._initialize_with_recovery()
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path)
@@ -30,6 +32,23 @@ class WorkflowRepository:
     def _initialize(self) -> None:
         apply_migrations(self.database_path)
         self.ensure_default_account()
+
+    def _initialize_with_recovery(self) -> None:
+        try:
+            self._initialize()
+        except Exception as exc:
+            if not self._is_malformed_database_error(exc):
+                raise
+            backup_path = self.database_path.with_suffix(f"{self.database_path.suffix}.corrupt-{uuid4().hex[:8]}")
+            if self.database_path.exists():
+                self.database_path.rename(backup_path)
+            self.logger.warning("Recovered from malformed SQLite database; moved corrupt file to %s", backup_path)
+            self._initialize()
+
+    @staticmethod
+    def _is_malformed_database_error(exc: Exception) -> bool:
+        message = str(exc).lower()
+        return "database disk image is malformed" in message or "malformed" in message
 
     def list_runs(self, account_id: str | None = None) -> list[WorkflowRun]:
         query = "SELECT payload_json FROM workflow_runs"

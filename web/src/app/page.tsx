@@ -3,24 +3,66 @@ import { ArrowRight, Bot, Cable, Radar, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
+const pillars = [
+  {
+    title: "Intake",
+    text: "Capture inbound requests from CRM, Slack, forms, or internal APIs without forcing teams into a single entry point.",
+  },
+  {
+    title: "Workflow logic",
+    text: "Normalize data, score urgency, assign next actions, and generate a concise workflow summary for operators.",
+  },
+  {
+    title: "Execution",
+    text: "Track provider activity, sync outcomes, and operational follow-through across connected systems.",
+  },
+];
+
+const signals = [
+  {
+    icon: <Bot className="size-4" />,
+    title: "AI-assisted summaries",
+    text: "Briefs, highlights, and next actions generated from structured workflow context.",
+  },
+  {
+    icon: <Cable className="size-4" />,
+    title: "Connected systems",
+    text: "CRM, communication, finance, and internal systems coordinated from one layer.",
+  },
+  {
+    icon: <Radar className="size-4" />,
+    title: "Execution visibility",
+    text: "Live workflow activity, sync outcomes, diagnostics, and health signals.",
+  },
+  {
+    icon: <ShieldCheck className="size-4" />,
+    title: "Protected workspace",
+    text: "Landing, sign-in, dashboard, and settings with session-based access control.",
+  },
+];
+
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(190,242,100,0.18),transparent_22%),linear-gradient(180deg,#09120d_0%,#101b15_36%,#f3efe7_36%,#f7f4ee_100%)] px-4 py-6 text-stone-950 md:px-6">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <section className="overflow-hidden rounded-[2.4rem] border border-white/12 bg-[#0b1510]/95 text-white shadow-[0_40px_140px_rgba(0,0,0,0.24)]">
-          <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="p-8 md:p-10">
-              <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-lime-200/85">
-                <span className="rounded-full bg-lime-300/15 px-3 py-1">RelayOps</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Operations automation</span>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(192,255,141,0.18),transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(9,80,46,0.16),transparent_18%),linear-gradient(180deg,#08110c_0%,#112018_36%,#eee7da_36%,#f7f3ec_100%)] px-4 py-6 md:px-6">
+      <div className="mx-auto max-w-[1460px] space-y-6">
+        <section className="relay-noise relative overflow-hidden rounded-[2.8rem] border border-white/10 bg-[#0b1711] text-white shadow-[0_40px_160px_rgba(0,0,0,0.28)]">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="relative z-10 px-7 py-8 md:px-10 md:py-10">
+              <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-lime-200/85">
+                <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-3 py-1">RelayOps</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Operations workflow platform</span>
               </div>
-              <h1 className="mt-8 max-w-4xl font-[family-name:var(--font-display)] text-6xl leading-[0.92] tracking-[-0.05em] md:text-8xl">
+
+              <h1 className="mt-10 max-w-5xl font-[family-name:var(--font-display)] text-6xl leading-[0.9] tracking-[-0.055em] text-white md:text-8xl">
                 Turn messy operational requests into structured workflows.
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-white/70 md:text-lg">
-                RelayOps ingests requests from CRM, Slack, forms, or APIs, normalizes the data, generates AI-assisted summaries, and tracks execution across connected systems.
+
+              <p className="mt-7 max-w-3xl text-base leading-8 text-white/70 md:text-lg">
+                RelayOps ingests requests from CRM, Slack, forms, or APIs, normalizes the data, generates AI-assisted
+                summaries, and tracks execution across connected systems.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+
+              <div className="mt-10 flex flex-wrap gap-3">
                 <Link href="/signin">
                   <Button className="h-12 rounded-full px-6 text-sm">
                     Sign in
@@ -29,47 +71,74 @@ export default function LandingPage() {
                 </Link>
                 <Link href="/dashboard">
                   <Button variant="outline" className="h-12 rounded-full border-white/15 bg-white/5 px-6 text-sm text-white hover:bg-white/10">
-                    Open dashboard
+                    Open workspace
                   </Button>
                 </Link>
               </div>
+
+              <div className="mt-12 grid gap-4 md:grid-cols-3">
+                {pillars.map((pillar) => (
+                  <article key={pillar.title} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-lime-200/80">{pillar.title}</p>
+                    <p className="mt-3 text-sm leading-7 text-white/64">{pillar.text}</p>
+                  </article>
+                ))}
+              </div>
             </div>
-            <div className="grid gap-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-8 md:p-10">
-              <LandingMetric icon={<Bot className="size-4" />} title="AI brief generation" text="Summaries, risk signals, and recommended next actions for every run." />
-              <LandingMetric icon={<Cable className="size-4" />} title="Connected systems" text="Coordinate execution across CRM, communications, finance, and internal tools." />
-              <LandingMetric icon={<Radar className="size-4" />} title="Run visibility" text="Track execution health, sync outcomes, and audit activity in one place." />
-              <LandingMetric icon={<ShieldCheck className="size-4" />} title="Secure access" text="Protected workspace sessions for dashboard and integration settings." />
+
+            <div className="relative border-l border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-7 py-8 md:px-10 md:py-10">
+              <div className="relay-panel rounded-[2rem] border border-white/10 bg-white/6 p-6 text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">Current frame</p>
+                <h2 className="mt-4 text-3xl font-semibold tracking-[-0.05em]">One layer between intake, workflow logic, and execution.</h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-white/62">
+                  RelayOps is positioned as the operational layer that receives inbound requests, structures them, and
+                  keeps follow-through visible across systems.
+                </p>
+              </div>
+
+              <div className="mt-5 grid gap-4">
+                {signals.map((signal) => (
+                  <article key={signal.title} className="rounded-[1.5rem] border border-white/10 bg-black/18 p-5">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-lime-200/80">
+                      {signal.icon}
+                      {signal.title}
+                    </div>
+                    <p className="mt-3 text-sm leading-7 text-white/62">{signal.text}</p>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <ValueCard title="Ingest" text="Capture inbound operational requests from connected tools and normalize the data." />
-          <ValueCard title="Orchestrate" text="Score urgency, route actions, and generate a clear workflow summary." />
-          <ValueCard title="Synchronize" text="Push structured updates into downstream systems with visible execution status." />
+        <section className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="rounded-[2rem] border border-stone-200 bg-white p-7 shadow-[0_24px_90px_rgba(0,0,0,0.08)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Product promise</p>
+            <h2 className="mt-4 font-[family-name:var(--font-display)] text-5xl tracking-[-0.05em] text-stone-950">
+              Better structure in, clearer execution out.
+            </h2>
+            <p className="mt-5 text-sm leading-7 text-stone-700">
+              RelayOps is not another chat UI. It is a workflow product built around operational requests, structured
+              data, AI-assisted summaries, and visible downstream execution.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            <ValueCard title="Ingest" text="Capture requests from multiple tools without losing context or structure." />
+            <ValueCard title="Orchestrate" text="Score urgency, assign actions, and produce workflow-ready summaries." />
+            <ValueCard title="Synchronize" text="Keep execution visible across CRM, communication, and finance systems." />
+          </div>
         </section>
       </div>
     </main>
   );
 }
 
-function LandingMetric({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
-  return (
-    <div className="rounded-[1.6rem] border border-white/10 bg-black/15 p-5">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-lime-200/80">
-        {icon}
-        {title}
-      </div>
-      <p className="mt-3 text-sm leading-6 text-white/66">{text}</p>
-    </div>
-  );
-}
-
 function ValueCard({ title, text }: { title: string; text: string }) {
   return (
-    <div className="rounded-[1.8rem] border border-stone-200 bg-white p-6 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">{title}</p>
+    <article className="rounded-[2rem] border border-stone-200 bg-white px-6 py-7 shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">{title}</p>
       <p className="mt-4 text-sm leading-7 text-stone-700">{text}</p>
-    </div>
+    </article>
   );
 }

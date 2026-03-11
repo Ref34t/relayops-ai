@@ -54,20 +54,24 @@ export function SettingsShell() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(160deg,#f5f1e9_0%,#e7f3e1_48%,#0d1712_48%,#0d1712_100%)] px-5 py-6 text-stone-950 md:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <section className="rounded-[2rem] border border-white/20 bg-white/85 p-6 shadow-[0_30px_90px_rgba(0,0,0,0.14)] backdrop-blur">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Integrations</p>
-              <h1 className="mt-3 font-[family-name:var(--font-display)] text-5xl tracking-[-0.04em]">Provider status across the current workspace.</h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-700">
-                Review configured providers, run diagnostics, and confirm which runtime values are loaded in the current environment.
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(192,255,141,0.16),transparent_24%),linear-gradient(180deg,#09110d_0%,#132019_32%,#f2eadf_32%,#f7f4ec_100%)] px-5 py-6 md:px-8">
+      <div className="mx-auto max-w-[1380px] space-y-6">
+        <section className="relay-noise relative overflow-hidden rounded-[2.4rem] border border-white/10 bg-[#0c1712] px-7 py-8 text-white shadow-[0_36px_120px_rgba(0,0,0,0.24)] md:px-9">
+          <div className="relative z-10 flex flex-wrap items-start justify-between gap-5">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-lime-200/80">Integrations</p>
+              <h1 className="mt-4 font-[family-name:var(--font-display)] text-5xl tracking-[-0.05em] text-white md:text-6xl">
+                Provider status, diagnostics, and loaded configuration.
+              </h1>
+              <p className="mt-5 max-w-2xl text-sm leading-8 text-white/68">
+                Review provider availability, validate configured integrations, and confirm the runtime values loaded
+                by the current workspace.
               </p>
             </div>
+
             <div className="flex flex-wrap gap-3">
               <Link href="/dashboard">
-                <Button variant="outline" className="h-11 rounded-full px-5 text-sm">
+                <Button variant="outline" className="h-11 rounded-full border-white/15 bg-white/5 px-5 text-sm text-white hover:bg-white/10">
                   <ArrowLeft className="size-4" />
                   Dashboard
                 </Button>
@@ -79,37 +83,47 @@ export function SettingsShell() {
           </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
           <div className="grid gap-4 md:grid-cols-2">
             {items.map((item) => (
-              <article key={item.provider} className="rounded-[1.6rem] border border-stone-200 bg-white p-5 shadow-sm">
+              <article key={item.provider} className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.06)]">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">{item.provider}</p>
                   <span className="rounded-full border border-stone-200 bg-stone-100 px-3 py-1 text-xs uppercase tracking-[0.18em] text-stone-700">
                     {item.mode}
                   </span>
                 </div>
-                <p className="mt-4 text-sm leading-6 text-stone-700">{item.detail}</p>
-                {item.action ? <p className="mt-3 text-xs uppercase tracking-[0.16em] text-emerald-700">{item.action}</p> : null}
+                <p className="mt-4 text-sm leading-7 text-stone-700">{item.detail}</p>
+                {item.action ? <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">{item.action}</p> : null}
               </article>
             ))}
           </div>
-          <div className="space-y-4 rounded-[1.8rem] border border-white/15 bg-[#0d1712] p-5 text-white shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
+
+          <div className="space-y-4 rounded-[2.2rem] border border-white/10 bg-[#0d1712] p-6 text-white shadow-[0_26px_90px_rgba(0,0,0,0.22)]">
             <StatusCard icon={<Orbit className="size-4" />} title="Status" value={status} />
             <StatusCard icon={<Gauge className="size-4" />} title="API endpoint" value={apiBaseUrl() || "Same-origin proxy"} />
-            <StatusCard icon={<ShieldAlert className="size-4" />} title="Behavior" value="Unavailable providers remain visible in settings, while workflow execution continues with the providers that are configured." />
+            <StatusCard
+              icon={<ShieldAlert className="size-4" />}
+              title="Behavior"
+              value="Unavailable providers remain visible in settings, while workflow execution continues with the providers that are configured."
+            />
           </div>
         </section>
 
-        <section className="rounded-[1.8rem] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Runtime configuration</p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl tracking-[-0.04em]">Loaded credentials and environment values.</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-700">
-            Sensitive values stay masked. This section exists to confirm what is loaded, not to expose secrets.
-          </p>
-          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <section className="rounded-[2.2rem] border border-stone-200 bg-white p-6 shadow-[0_22px_80px_rgba(0,0,0,0.08)]">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Runtime configuration</p>
+            <h2 className="mt-4 font-[family-name:var(--font-display)] text-4xl tracking-[-0.05em] text-stone-950">
+              Loaded credentials and environment values.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-stone-700">
+              Sensitive values remain masked. This view is intended for operational verification only.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {runtimeItems.map((item) => (
-              <article key={item.env_var} className="rounded-[1.4rem] border border-stone-200 bg-[#fcfbf7] p-4">
+              <article key={item.env_var} className="rounded-[1.7rem] border border-stone-200 bg-[#fcfbf7] p-5">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">{item.provider}</p>
                   <span
@@ -120,9 +134,9 @@ export function SettingsShell() {
                     {item.configured ? "loaded" : "missing"}
                   </span>
                 </div>
-                <p className="mt-3 text-xs uppercase tracking-[0.16em] text-stone-400">{item.env_var}</p>
-                <p className="mt-2 break-all font-mono text-sm text-stone-800">{item.preview}</p>
-                <p className="mt-3 text-xs text-stone-500">{item.source}</p>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-stone-400">{item.env_var}</p>
+                <p className="mt-3 break-all rounded-[1rem] bg-white px-3 py-3 font-mono text-sm text-stone-800">{item.preview}</p>
+                <p className="mt-4 text-xs text-stone-500">{item.source}</p>
               </article>
             ))}
           </div>
@@ -134,12 +148,12 @@ export function SettingsShell() {
 
 function StatusCard({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
-    <div className="rounded-[1.3rem] border border-white/10 bg-white/5 p-4">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-white/55">
+    <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-5">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-white/50">
         {icon}
         {title}
       </div>
-      <p className="mt-3 text-sm leading-6 text-white/85">{value}</p>
+      <p className="mt-4 text-sm leading-7 text-white/84">{value}</p>
     </div>
   );
 }

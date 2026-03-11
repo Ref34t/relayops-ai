@@ -101,7 +101,7 @@ export function DashboardShell() {
   }
 
   async function runWorkflow(formData: FormData) {
-      setWorkflowStatus("Submitting workflow...");
+    setWorkflowStatus("Submitting workflow...");
     const payload: WorkflowPayload = {
       source: String(formData.get("source") ?? "hubspot"),
       company: String(formData.get("company") ?? ""),
@@ -140,10 +140,10 @@ export function DashboardShell() {
   const enabledIntegrations = state.integrations.filter((item) => item.enabled).length;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(192,255,141,0.16),_transparent_22%),radial-gradient(circle_at_bottom_right,_rgba(27,94,63,0.18),_transparent_26%),linear-gradient(180deg,#08110c_0%,#101d17_30%,#f3efe7_30%,#f6f4ee_100%)] text-stone-950">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(192,255,141,0.18),_transparent_22%),radial-gradient(circle_at_bottom_right,_rgba(17,88,54,0.16),_transparent_20%),linear-gradient(180deg,#07110c_0%,#101d17_28%,#efe7da_28%,#f7f3ec_100%)] text-stone-950">
       <div className="mx-auto grid min-h-screen max-w-[1500px] gap-6 px-4 py-5 lg:grid-cols-[320px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-5 rounded-[2rem] border border-white/12 bg-[#0b1510]/95 p-5 text-white shadow-[0_40px_120px_rgba(0,0,0,0.25)] backdrop-blur">
-          <div className="space-y-4 rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
+        <aside className="space-y-5 rounded-[2rem] border border-white/12 bg-[#0b1510]/95 p-5 text-white shadow-[0_40px_120px_rgba(0,0,0,0.25)] backdrop-blur lg:sticky lg:top-5 lg:h-[calc(100vh-2.5rem)] lg:overflow-auto">
+          <div className="space-y-4 rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
             <div className="flex items-center justify-between gap-3">
               <span className="rounded-full bg-lime-300/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-lime-200">
                 RelayOps
@@ -163,7 +163,7 @@ export function DashboardShell() {
             </div>
           </div>
 
-          <div className="space-y-3 rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
+          <div className="space-y-3 rounded-[1.6rem] border border-white/10 bg-black/15 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/45">Navigation</p>
             <div className="grid gap-2">
               <QuickLink href="#workflow" title="New workflow" description="Create and submit a workflow request." />
@@ -209,7 +209,7 @@ export function DashboardShell() {
         </aside>
 
         <section className="space-y-6">
-          <header className="overflow-hidden rounded-[2rem] border border-white/30 bg-white/85 shadow-[0_40px_120px_rgba(0,0,0,0.14)] backdrop-blur">
+          <header className="overflow-hidden rounded-[2.4rem] border border-white/30 bg-white/88 shadow-[0_40px_120px_rgba(0,0,0,0.14)] backdrop-blur">
             <div className="grid gap-0 lg:grid-cols-[1.3fr_0.7fr]">
               <div className="space-y-6 p-6 md:p-8">
                 <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.26em] text-emerald-900/60">
@@ -248,7 +248,7 @@ export function DashboardShell() {
                 </div>
               </div>
 
-              <div className="grid gap-3 bg-[#0d1712] p-6 text-white md:p-8">
+              <div className="relay-noise relative grid gap-3 bg-[#0d1712] p-6 text-white md:p-8">
                 <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-lime-200/80">
                     <Radar className="size-4" />
@@ -290,10 +290,7 @@ export function DashboardShell() {
 
           <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
             <div className="space-y-6">
-              <section
-                id="workflow"
-                className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-[0_24px_80px_rgba(0,0,0,0.1)]"
-              >
+              <section id="workflow" className="rounded-[2.2rem] border border-stone-200 bg-white p-6 shadow-[0_24px_80px_rgba(0,0,0,0.1)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700/70">New workflow</p>
@@ -346,7 +343,7 @@ export function DashboardShell() {
                 </form>
               </section>
 
-              <section className="rounded-[2rem] border border-stone-200 bg-[#f8f4ec] p-6 shadow-sm">
+              <section className="rounded-[2.2rem] border border-stone-200 bg-[#f8f4ec] p-6 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Integrations</p>
                 <div className="mt-4 grid gap-4 md:grid-cols-3">
                   {state.integrations.map((item) => (
@@ -369,7 +366,7 @@ export function DashboardShell() {
             </div>
 
             <div id="runs" className="space-y-6">
-              <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-[0_24px_80px_rgba(0,0,0,0.1)]">
+              <section className="rounded-[2.2rem] border border-stone-200 bg-white p-6 shadow-[0_24px_80px_rgba(0,0,0,0.1)]">
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Activity</p>
@@ -383,7 +380,7 @@ export function DashboardShell() {
                 </div>
                 <div className="mt-6 space-y-4">
                   {(state.overview?.recent_runs ?? []).map((run) => (
-                    <article key={run.id} className="rounded-[1.6rem] border border-stone-200 bg-[#fcfbf7] p-5">
+                    <article key={run.id} className="rounded-[1.8rem] border border-stone-200 bg-[#fcfbf7] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                           <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
@@ -417,7 +414,7 @@ export function DashboardShell() {
                 </div>
               </section>
 
-              <section className="rounded-[2rem] border border-stone-200 bg-[#0d1712] p-6 text-white shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+              <section className="rounded-[2.2rem] border border-stone-200 bg-[#0d1712] p-6 text-white shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-lime-200/75">Workspace overview</p>
                 <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl tracking-[-0.04em]">
                   Live view of workflow volume, provider status, and recent execution.

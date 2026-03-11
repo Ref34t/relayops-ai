@@ -65,6 +65,8 @@
   body {
     @apply bg-background font-sans text-foreground;
     background-attachment: fixed;
+    min-height: 100vh;
+    text-rendering: optimizeLegibility;
   }
 
   a {
@@ -72,9 +74,34 @@
     text-decoration: none;
   }
 
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 28%, white);
+    color: var(--foreground);
+  }
+
   input,
   textarea,
   select {
     font: inherit;
+  }
+}
+
+@layer utilities {
+  .relay-panel {
+    background: color-mix(in oklab, white 82%, transparent);
+    backdrop-filter: blur(18px);
+  }
+
+  .relay-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.7) 0.5px, transparent 0.5px),
+      radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+      radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px);
+    background-size: 18px 18px, 22px 22px, 26px 26px;
   }
 }

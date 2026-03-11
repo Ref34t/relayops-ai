@@ -49,6 +49,14 @@ class SyncResult(BaseModel):
     request_id: str | None = None
 
 
+class AIAnalysis(BaseModel):
+    risk_level: str
+    executive_title: str
+    highlights: list[str]
+    next_steps: list[str]
+    automation_opportunities: list[str]
+
+
 class WorkflowRun(BaseModel):
     id: str
     created_at: datetime = Field(default_factory=utc_now)
@@ -57,6 +65,7 @@ class WorkflowRun(BaseModel):
     normalized: NormalizedRecord
     score: int
     summary: str
+    ai_analysis: AIAnalysis
     actions: list[WorkflowAction]
     audit_events: list[AuditEvent]
     sync_results: list[SyncResult]

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from uuid import uuid4
 
-from app.models import AuditEvent, IntakePayload, NormalizedRecord, SyncResult, WorkflowAction, WorkflowRequest, WorkflowRun
+from app.models import AIAnalysis, AuditEvent, IntakePayload, NormalizedRecord, SyncResult, WorkflowAction, WorkflowRequest, WorkflowRun
 
 
 class DataNormalizer:
@@ -124,6 +124,30 @@ class WorkflowEngine:
         )
 
     @staticmethod
+    def build_ai_analysis(record: NormalizedRecord, score: int) -> AIAnalysis:
+        joined_systems = ", ".join(record.requested_systems)
+        risk_level = "high" if score >= 85 else "medium" if score >= 65 else "low"
+        return AIAnalysis(
+            risk_level=risk_level,
+            executive_title=f"{record.company}: {record.urgency.capitalize()}-urgency integration opportunity",
+            highlights=[
+                f"Primary friction is concentrated around {', '.join(record.pain_points[:2])}.",
+                f"Critical systems in scope: {joined_systems}.",
+                f"Current workflow confidence score is {score}/100 based on urgency, system count, and operational friction.",
+            ],
+            next_steps=[
+                f"Confirm source-of-truth fields for {record.company} before syncing into {record.requested_systems[0]}.",
+                "Define alerting and retry policy for failed downstream syncs.",
+                "Launch with one operational brief template and tighten it after stakeholder feedback.",
+            ],
+            automation_opportunities=[
+                "Auto-generate weekly decision briefs for leadership.",
+                "Trigger Slack notifications only for high-risk or blocked workflows.",
+                "Create CRM follow-up tasks when manual reporting or approval delays are detected.",
+            ],
+        )
+
+    @staticmethod
     def build_audit_events(record: NormalizedRecord, score: int) -> list[AuditEvent]:
         return [
             AuditEvent(stage="ingest", status="completed", detail=f"Accepted payload from {record.source}."),
@@ -165,6 +189,7 @@ class WorkflowEngine:
             normalized=record,
             score=score,
             summary=cls.summarize(record, score),
+            ai_analysis=cls.build_ai_analysis(record, score),
             actions=cls.build_actions(record, score),
             audit_events=cls.build_audit_events(record, score),
             sync_results=cls.build_sync_results(record),

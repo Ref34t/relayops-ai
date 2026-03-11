@@ -7,7 +7,8 @@ from pathlib import Path
 from uuid import uuid4
 
 from app.migrations import MigrationManager
-from app.models import Account, HealthResponse, JobRecord, WorkflowRun
+from app.models import Account, HealthResponse, JobRecord, NormalizedRecord, WorkflowRun
+from app.services import WorkflowEngine
 
 
 class WorkflowRepository:
@@ -35,7 +36,7 @@ class WorkflowRepository:
                 ORDER BY datetime(created_at) DESC, rowid DESC
                 """
             ).fetchall()
-        return [WorkflowRun.model_validate_json(row["payload_json"]) for row in rows]
+        return [self._deserialize_run(row["payload_json"]) for row in rows]
 
     def save_run(self, run: WorkflowRun) -> WorkflowRun:
         with closing(self._connect()) as connection:
@@ -70,7 +71,7 @@ class WorkflowRepository:
             ).fetchone()
         if not row:
             return None
-        return WorkflowRun.model_validate_json(row["payload_json"])
+        return self._deserialize_run(row["payload_json"])
 
     def ensure_default_account(self) -> Account:
         account = self.get_account_by_api_key(self.demo_api_key)
@@ -207,6 +208,16 @@ class WorkflowRepository:
         else:
             run.status = "completed"
         self.save_run(run)
+
+    def _deserialize_run(self, payload_json: str) -> WorkflowRun:
+        payload = json.loads(payload_json)
+        if "ai_analysis" not in payload:
+            normalized = NormalizedRecord.model_validate(payload["normalized"])
+            payload["ai_analysis"] = WorkflowEngine.build_ai_analysis(
+                normalized,
+                payload["score"],
+            ).model_dump()
+        return WorkflowRun.model_validate(payload)
 
     def health(self) -> HealthResponse:
         with closing(self._connect()) as connection:

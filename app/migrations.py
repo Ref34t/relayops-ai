@@ -46,6 +46,12 @@ MIGRATIONS: list[tuple[str, str]] = [
         );
         """,
     ),
+    (
+        "002_workflow_runs_account_id",
+        """
+        ALTER TABLE workflow_runs ADD COLUMN account_id TEXT;
+        """,
+    ),
 ]
 
 
@@ -70,6 +76,10 @@ class MigrationManager:
             for version, sql in MIGRATIONS:
                 if version in applied:
                     continue
-                connection.executescript(sql)
+                try:
+                    connection.executescript(sql)
+                except sqlite3.OperationalError as exc:
+                    if "duplicate column name" not in str(exc).lower():
+                        raise
                 connection.execute("INSERT INTO schema_migrations (version) VALUES (?)", (version,))
             connection.commit()

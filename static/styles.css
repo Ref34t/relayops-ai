@@ -141,7 +141,8 @@ h2 {
 .metric-card,
 .flow-card,
 .run-card,
-.workflow-form {
+.workflow-form,
+.auth-form {
   background: linear-gradient(180deg, rgba(18, 28, 48, 0.82), rgba(9, 15, 26, 0.94));
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -172,6 +173,26 @@ h2 {
   gap: 14px;
   margin-top: 28px;
   flex-wrap: wrap;
+}
+
+.workspace-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.workspace-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-size: 0.84rem;
+  border: 1px solid var(--line);
+}
+
+.workspace-key {
+  color: var(--accent);
 }
 
 .button {
@@ -296,6 +317,27 @@ h2 {
   padding: 24px;
 }
 
+.ai-panel {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(129, 246, 209, 0.05);
+  border: 1px solid rgba(129, 246, 209, 0.12);
+}
+
+.ai-panel h4 {
+  margin: 6px 0 10px;
+  font-size: 1.1rem;
+}
+
+.ai-risk {
+  margin: 0 0 12px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+}
+
 .flow-card span,
 .run-card .run-score {
   display: inline-flex;
@@ -387,7 +429,15 @@ h2 {
   border-radius: 30px;
 }
 
-.workflow-form label {
+.auth-form {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 28px;
+}
+
+.workflow-form label,
+.auth-form label {
   display: grid;
   gap: 10px;
   font-weight: 700;
@@ -395,6 +445,7 @@ h2 {
 }
 
 .workflow-form input,
+.auth-form input,
 .workflow-form select,
 .workflow-form textarea,
 .workflow-form button {
@@ -402,6 +453,7 @@ h2 {
 }
 
 .workflow-form input,
+.auth-form input,
 .workflow-form select,
 .workflow-form textarea {
   width: 100%;

@@ -6,6 +6,42 @@ const integrations = document.querySelector("#integrations");
 const runs = document.querySelector("#runs");
 const form = document.querySelector("#workflow-form");
 const formStatus = document.querySelector("#form-status");
+const authForm = document.querySelector("#auth-form");
+const authStatus = document.querySelector("#auth-status");
+const apiKeyInput = document.querySelector("#api-key-input");
+const workspaceName = document.querySelector("#workspace-name");
+const workspaceMode = document.querySelector("#workspace-mode");
+
+const API_KEY_STORAGE = "relayops_api_key";
+
+function authHeaders() {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  return apiKey ? { "X-RelayOps-Api-Key": apiKey } : {};
+}
+
+function clearStoredKey() {
+  localStorage.removeItem(API_KEY_STORAGE);
+}
+
+async function loadAccount() {
+  let response = await fetch("/api/account", { headers: authHeaders() });
+  if (response.status === 401) {
+    clearStoredKey();
+    response = await fetch("/api/account");
+  }
+  if (!response.ok) {
+    workspaceName.textContent = "Unauthorized";
+    workspaceMode.textContent = "Invalid key";
+    authStatus.textContent = "The stored API key is invalid. Re-enter a valid workspace key.";
+    return;
+  }
+  const data = await response.json();
+  workspaceName.textContent = data.account.name;
+  workspaceMode.textContent = data.account.api_key === "relayops-demo-key" ? "Demo workspace" : "Custom key";
+  if (!apiKeyInput.value) {
+    apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) ?? data.account.api_key;
+  }
+}
 
 function renderMetrics(items) {
   metrics.innerHTML = items
@@ -53,6 +89,7 @@ function renderIntegrations(items) {
           <p class="metric-label">${item.provider}</p>
           <strong class="metric-value integration-mode">${item.mode}</strong>
           <p class="metric-detail">${item.detail}</p>
+          <p class="settings-action">${item.action ?? ""}</p>
         </article>
       `,
     )
@@ -75,6 +112,22 @@ function renderRuns(items) {
             <span>${run.normalized.urgency} urgency</span>
             <span>${run.status}</span>
             <span>${run.normalized.monthly_revenue}</span>
+          </div>
+          <div class="ai-panel">
+            <p class="ops-heading">AI analysis</p>
+            <h4>${run.ai_analysis.executive_title}</h4>
+            <p class="ai-risk">Risk: ${run.ai_analysis.risk_level}</p>
+            <ul class="ops-list">
+              ${run.ai_analysis.highlights.map((item) => `<li>${item}</li>`).join("")}
+            </ul>
+            <p class="ops-heading">Next steps</p>
+            <ul class="ops-list">
+              ${run.ai_analysis.next_steps.map((item) => `<li>${item}</li>`).join("")}
+            </ul>
+            <p class="ops-heading">Automation opportunities</p>
+            <ul class="ops-list">
+              ${run.ai_analysis.automation_opportunities.map((item) => `<li>${item}</li>`).join("")}
+            </ul>
           </div>
           <div class="tag-row">
             ${run.normalized.requested_systems.map((tag) => `<span class="tag">${tag}</span>`).join("")}
@@ -100,11 +153,20 @@ function renderRuns(items) {
 }
 
 async function loadOverview() {
-  const [overviewResponse, healthResponse, integrationResponse] = await Promise.all([
-    fetch("/api/overview"),
-    fetch("/api/health"),
-    fetch("/api/integrations"),
+  let [overviewResponse, healthResponse, integrationResponse] = await Promise.all([
+    fetch("/api/overview", { headers: authHeaders() }),
+    fetch("/api/health", { headers: authHeaders() }),
+    fetch("/api/integrations", { headers: authHeaders() }),
   ]);
+
+  if ([overviewResponse, healthResponse, integrationResponse].some((response) => response.status === 401)) {
+    clearStoredKey();
+    [overviewResponse, healthResponse, integrationResponse] = await Promise.all([
+      fetch("/api/overview"),
+      fetch("/api/health"),
+      fetch("/api/integrations"),
+    ]);
+  }
 
   if (!overviewResponse.ok || !healthResponse.ok || !integrationResponse.ok) {
     subtitle.textContent = "The backend is unavailable. Start the local API and reload.";
@@ -149,11 +211,20 @@ form.addEventListener("submit", async (event) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearStoredKey();
+      authStatus.textContent = "Stored workspace key was invalid. Reverted to the demo workspace.";
+      await loadAccount();
+      await loadOverview();
+      formStatus.textContent = "Retry with a valid workspace key or use the demo workspace.";
+      return;
+    }
     formStatus.textContent = "The workflow request failed. Check the backend and try again.";
     return;
   }
@@ -163,4 +234,19 @@ form.addEventListener("submit", async (event) => {
   document.querySelector("#demo").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const value = apiKeyInput.value.trim();
+  if (!value) {
+    authStatus.textContent = "Enter a workspace API key.";
+    return;
+  }
+  localStorage.setItem(API_KEY_STORAGE, value);
+  authStatus.textContent = "Workspace key saved. Reloading workspace context...";
+  await loadAccount();
+  await loadOverview();
+  authStatus.textContent = "Workspace context updated.";
+});
+
+loadAccount();
 loadOverview();

@@ -20,6 +20,10 @@
       <header class="hero">
         <div class="hero-copy">
           <p class="eyebrow">RelayOps Platform</p>
+          <div class="workspace-bar">
+            <span class="workspace-pill" id="workspace-name">Workspace</span>
+            <span class="workspace-pill workspace-key" id="workspace-mode">Demo mode</span>
+          </div>
           <h1>Operational AI for teams stuck between too many tools.</h1>
           <p class="lede" id="subtitle"></p>
 
@@ -36,6 +40,23 @@
       </header>
 
       <section class="metrics" id="metrics"></section>
+
+      <section class="ops-overview">
+        <div class="section-heading">
+          <p class="eyebrow">Workspace Access</p>
+          <h2>Explicit account context, not a hidden demo fallback.</h2>
+        </div>
+        <form id="auth-form" class="auth-form">
+          <label>
+            API Key
+            <input id="api-key-input" name="api_key" placeholder="relayops-demo-key" />
+          </label>
+          <div class="form-footer">
+            <p id="auth-status" class="form-status"></p>
+            <button type="submit" class="button button-secondary">Use workspace key</button>
+          </div>
+        </form>
+      </section>
 
       <section class="signal-strip">
         <div class="signal-card">

@@ -121,6 +121,10 @@ class IntegrationManager:
 
         summary = payload.get("output_text") or self._extract_output_text(payload) or run.summary
         run.summary = summary.strip()
+        run.ai_analysis.highlights = [
+            "AI-generated brief replaced the deterministic summary for this run.",
+            *run.ai_analysis.highlights[:2],
+        ]
         latency_ms = int((time.perf_counter() - started) * 1000)
         run.audit_events.append(
             AuditEvent(stage="ai_enrichment", status="completed", detail="OpenAI generated the operational brief.")

@@ -21,6 +21,9 @@ The MVP models a realistic business flow:
 - Normalization layer for inconsistent fields and incomplete data
 - Workflow scoring and action generation
 - Persistent run history backed by SQLite
+- Database migration bootstrap for schema creation
+- Demo account and API-key based auth model
+- Persisted background job queue for external integrations
 - Health reporting, audit trail, and sync visibility
 - Optional live integrations for OpenAI, Slack, and HubSpot
 - Dedicated settings page for connector diagnostics and setup guidance
@@ -32,6 +35,9 @@ The MVP models a realistic business flow:
 - `app/models.py`: typed request and response contracts
 - `app/services.py`: normalization logic, workflow engine, audit events, and sync simulation
 - `app/repository.py`: SQLite-backed workflow persistence and health reporting
+- `app/migrations.py`: migration bootstrap and schema registration
+- `app/auth.py`: demo account and API-key resolution
+- `app/jobs.py`: persisted background job processing for integrations
 - `app/config.py`: runtime settings for app configuration
 - `static/index.html`: SaaS-style product page and live demo shell
 - `static/styles.css`: visual system and responsive layout
@@ -43,8 +49,9 @@ The MVP models a realistic business flow:
 1. A webhook or intake payload arrives from a client system.
 2. The backend normalizes inconsistent field names and missing values.
 3. The workflow engine scores urgency, determines actions, and composes an operational brief.
-4. Optional integrations enrich the run with live summaries and downstream sync attempts.
-5. The dashboard visualizes recent runs, audit events, health, and sync outcomes.
+4. Integration work is queued as persisted background jobs instead of running inline in the request.
+5. Optional integrations enrich the run with live summaries and downstream sync attempts.
+6. The dashboard visualizes recent runs, audit events, health, and sync outcomes.
 
 ## Stack
 
@@ -69,6 +76,13 @@ Available pages:
 
 - `/` product dashboard
 - `/settings` integration settings and connector diagnostics
+
+Demo account:
+
+- default workspace: `RelayOps Demo Workspace`
+- default API key: `relayops-demo-key`
+
+You can send the API key through the `X-RelayOps-Api-Key` header, although the local UI falls back to the demo workspace automatically.
 
 ## Optional live integrations
 
@@ -95,7 +109,9 @@ python3 -m compileall app
 
 - `GET /api/overview`
 - `GET /api/health`
+- `GET /api/account`
 - `GET /api/integrations`
+- `GET /api/jobs`
 - `POST /api/integrations/check`
 - `POST /api/webhooks/intake`
 - `POST /api/workflows/execute`
@@ -107,6 +123,9 @@ python3 -m compileall app
 - Normalization layer: alias mapping and messy-data cleanup
 - Workflow layer: scoring, action generation, and brief creation
 - Persistence layer: SQLite-backed workflow history
+- Migration layer: schema bootstrap through migration registration
+- Account layer: demo workspace plus API-key based account resolution
+- Queue layer: background job records for external integrations
 - Ops layer: health reporting, audit events, and sync result tracking
 - Presentation layer: SaaS-style product interface with live workflow execution
 

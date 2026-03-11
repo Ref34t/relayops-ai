@@ -66,6 +66,17 @@ class IntegrationManager:
         run = await self._apply_slack_notification(run)
         return run
 
+    async def process_provider(self, provider: str, run: WorkflowRun) -> WorkflowRun:
+        handlers = {
+            "openai": self._apply_openai_summary,
+            "hubspot": self._apply_hubspot_sync,
+            "slack": self._apply_slack_notification,
+        }
+        handler = handlers.get(provider)
+        if not handler:
+            return run
+        return await handler(run)
+
     async def _apply_openai_summary(self, run: WorkflowRun) -> WorkflowRun:
         if not self.settings.openai_api_key:
             run.audit_events.append(

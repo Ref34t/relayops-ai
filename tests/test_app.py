@@ -54,7 +54,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(payload["normalized"]["company"], "Atlas Retail Ops")
         self.assertEqual(payload["normalized"]["urgency"], "high")
-        self.assertEqual(payload["status"], "completed")
+        self.assertEqual(payload["status"], "queued")
         self.assertGreaterEqual(payload["score"], 70)
         self.assertTrue(payload["audit_events"])
         self.assertTrue(payload["sync_results"])
@@ -121,6 +121,41 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(len(payload["items"]), 3)
         self.assertTrue(all(item["mode"] == "disabled" for item in payload["items"]))
+
+    async def test_account_endpoint_returns_demo_account(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/api/account")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+
+        self.assertEqual(payload["account"]["email"], "demo@relayops.app")
+        self.assertTrue(payload["account"]["api_key"])
+
+    async def test_jobs_endpoint_exposes_queue_records(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.post(
+                "/api/workflows/execute",
+                json={
+                    "source": "hubspot",
+                    "company": "Queue Example",
+                    "contact_name": "Queue User",
+                    "email": "queue@example.com",
+                    "pain_points": ["Manual routing"],
+                    "requested_systems": ["HubSpot"],
+                    "monthly_revenue": "EUR 50k-70k",
+                    "urgency": "medium",
+                    "notes": "Queue verification.",
+                },
+            )
+            response = await client.get("/api/jobs")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+
+        self.assertGreaterEqual(len(payload), 3)
 
 
 if __name__ == "__main__":

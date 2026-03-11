@@ -10,6 +10,7 @@ from typing import Optional
 class Settings:
     app_name: str = "RelayOps AI"
     database_path: Path = Path("data/relayops.db")
+    demo_api_key: str = "relayops-demo-key"
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4o-mini"
     slack_webhook_url: Optional[str] = None
@@ -20,6 +21,7 @@ class Settings:
 def get_settings() -> Settings:
     return Settings(
         database_path=Path(os.getenv("RELAYOPS_DB_PATH", "data/relayops.db")),
+        demo_api_key=os.getenv("RELAYOPS_DEMO_API_KEY", "relayops-demo-key"),
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
         slack_webhook_url=os.getenv("SLACK_WEBHOOK_URL"),

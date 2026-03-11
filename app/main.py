@@ -2,14 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.auth import get_current_account
 from app.config import get_settings
 from app.integrations import IntegrationManager
+from app.jobs import JobRunner
 from app.logging import configure_logging
-from app.models import HealthResponse, IntakePayload, IntegrationCheckResponse, IntegrationStatusResponse, OverviewMetric, OverviewResponse, WorkflowRequest
+from app.models import AccountResponse, HealthResponse, IntakePayload, IntegrationCheckResponse, IntegrationStatusResponse, OverviewMetric, OverviewResponse, WorkflowRequest
 from app.repository import WorkflowRepository
 from app.services import DataNormalizer, WorkflowEngine, seed_requests
 
@@ -19,12 +21,17 @@ configure_logging()
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
-    repository = WorkflowRepository(settings.database_path)
+    repository = WorkflowRepository(settings.database_path, settings.demo_api_key)
     integration_manager = IntegrationManager(settings)
+    job_runner = JobRunner(repository, integration_manager)
+    app.state.repository = repository
 
     if not repository.has_runs():
+        account = repository.get_default_account()
         for item in seed_requests():
-            repository.save_run(WorkflowEngine.run(DataNormalizer.from_request(item)))
+            run = WorkflowEngine.run(DataNormalizer.from_request(item))
+            run.account_id = account.id
+            repository.save_run(run)
 
     static_dir = Path(__file__).resolve().parent.parent / "static"
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -78,21 +85,38 @@ def create_app() -> FastAPI:
     async def integrations_check() -> IntegrationCheckResponse:
         return await integration_manager.check_integrations()
 
+    @app.get("/api/account", response_model=AccountResponse)
+    async def account(current_account=Depends(get_current_account)) -> AccountResponse:
+        return AccountResponse(account=current_account)
+
+    @app.get("/api/jobs")
+    async def jobs():
+        return repository.list_jobs()
 
     @app.post("/api/webhooks/intake")
-    async def intake_webhook(intake: IntakePayload):
+    async def intake_webhook(intake: IntakePayload, background_tasks: BackgroundTasks, current_account=Depends(get_current_account)):
         record = DataNormalizer.normalize(intake)
         run = WorkflowEngine.run(record)
-        run = await integration_manager.enrich_run(run)
-        return repository.save_run(run)
+        run.account_id = current_account.id
+        run.status = "queued"
+        repository.save_run(run)
+        for provider in ("openai", "hubspot", "slack"):
+            repository.enqueue_job(run.id, provider)
+        background_tasks.add_task(job_runner.process_pending_jobs, run.id)
+        return run
 
 
     @app.post("/api/workflows/execute")
-    async def execute_workflow(request: WorkflowRequest):
+    async def execute_workflow(request: WorkflowRequest, background_tasks: BackgroundTasks, current_account=Depends(get_current_account)):
         record = DataNormalizer.from_request(request)
         run = WorkflowEngine.run(record)
-        run = await integration_manager.enrich_run(run)
-        return repository.save_run(run)
+        run.account_id = current_account.id
+        run.status = "queued"
+        repository.save_run(run)
+        for provider in ("openai", "hubspot", "slack"):
+            repository.enqueue_job(run.id, provider)
+        background_tasks.add_task(job_runner.process_pending_jobs, run.id)
+        return run
 
     return app
 

@@ -52,6 +52,7 @@ class SyncResult(BaseModel):
 class WorkflowRun(BaseModel):
     id: str
     created_at: datetime = Field(default_factory=utc_now)
+    account_id: str | None = None
     source: str
     normalized: NormalizedRecord
     score: int
@@ -72,6 +73,25 @@ class WorkflowRequest(BaseModel):
     monthly_revenue: str
     urgency: str
     notes: str = ""
+
+
+class Account(BaseModel):
+    id: str
+    name: str
+    email: str
+    api_key: str
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class JobRecord(BaseModel):
+    id: str
+    run_id: str
+    provider: str
+    status: str
+    detail: str
+    attempts: int = 0
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
 
 
 class OverviewMetric(BaseModel):
@@ -111,3 +131,7 @@ class IntegrationStatusResponse(BaseModel):
 
 class IntegrationCheckResponse(BaseModel):
     items: list[IntegrationStatus]
+
+
+class AccountResponse(BaseModel):
+    account: Account

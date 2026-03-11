@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import BackgroundTasks, Depends, FastAPI
@@ -15,16 +17,27 @@ from app.models import AccountResponse, HealthResponse, IntakePayload, Integrati
 from app.repository import WorkflowRepository
 from app.services import DataNormalizer, WorkflowEngine, seed_requests
 
-configure_logging()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    repository = app.state.repository
+    job_runner = app.state.job_runner
+    settings = app.state.settings
+    if settings.run_jobs_in_web:
+        for run_id in repository.list_pending_run_ids():
+            asyncio.create_task(job_runner.process_pending_jobs(run_id))
+    yield
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name)
+    configure_logging(settings.log_format)
+    app = FastAPI(title=settings.app_name, lifespan=lifespan)
     repository = WorkflowRepository(settings.database_path, settings.demo_api_key)
     integration_manager = IntegrationManager(settings)
-    job_runner = JobRunner(repository, integration_manager)
+    job_runner = JobRunner(repository, integration_manager, settings.worker_poll_interval_ms)
     app.state.repository = repository
+    app.state.job_runner = job_runner
+    app.state.settings = settings
 
     if not repository.has_runs():
         account = repository.get_default_account()
@@ -47,9 +60,9 @@ def create_app() -> FastAPI:
 
 
     @app.get("/api/overview", response_model=OverviewResponse)
-    async def overview() -> OverviewResponse:
-        runs = repository.list_runs()
-        health = repository.health()
+    async def overview(current_account=Depends(get_current_account)) -> OverviewResponse:
+        runs = repository.list_runs(current_account.id)
+        health = repository.health(current_account.id)
         return OverviewResponse(
             title=settings.app_name,
             subtitle="An AI workflow and integration layer for modern operations teams handling fragmented business systems.",
@@ -69,20 +82,20 @@ def create_app() -> FastAPI:
 
 
     @app.get("/api/runs")
-    async def list_runs():
-        return repository.list_runs()
+    async def list_runs(current_account=Depends(get_current_account)):
+        return repository.list_runs(current_account.id)
 
 
     @app.get("/api/health", response_model=HealthResponse)
-    async def health() -> HealthResponse:
-        return repository.health()
+    async def health(current_account=Depends(get_current_account)) -> HealthResponse:
+        return repository.health(current_account.id)
 
     @app.get("/api/integrations", response_model=IntegrationStatusResponse)
-    async def integrations() -> IntegrationStatusResponse:
+    async def integrations(current_account=Depends(get_current_account)) -> IntegrationStatusResponse:
         return integration_manager.status()
 
     @app.post("/api/integrations/check", response_model=IntegrationCheckResponse)
-    async def integrations_check() -> IntegrationCheckResponse:
+    async def integrations_check(current_account=Depends(get_current_account)) -> IntegrationCheckResponse:
         return await integration_manager.check_integrations()
 
     @app.get("/api/account", response_model=AccountResponse)
@@ -90,8 +103,8 @@ def create_app() -> FastAPI:
         return AccountResponse(account=current_account)
 
     @app.get("/api/jobs")
-    async def jobs():
-        return repository.list_jobs()
+    async def jobs(current_account=Depends(get_current_account)):
+        return repository.list_jobs(account_id=current_account.id)
 
     @app.post("/api/webhooks/intake")
     async def intake_webhook(intake: IntakePayload, background_tasks: BackgroundTasks, current_account=Depends(get_current_account)):
@@ -102,7 +115,8 @@ def create_app() -> FastAPI:
         repository.save_run(run)
         for provider in ("openai", "hubspot", "slack"):
             repository.enqueue_job(run.id, provider)
-        background_tasks.add_task(job_runner.process_pending_jobs, run.id)
+        if settings.run_jobs_in_web:
+            background_tasks.add_task(job_runner.process_pending_jobs, run.id)
         return run
 
 
@@ -115,7 +129,8 @@ def create_app() -> FastAPI:
         repository.save_run(run)
         for provider in ("openai", "hubspot", "slack"):
             repository.enqueue_job(run.id, provider)
-        background_tasks.add_task(job_runner.process_pending_jobs, run.id)
+        if settings.run_jobs_in_web:
+            background_tasks.add_task(job_runner.process_pending_jobs, run.id)
         return run
 
     return app

@@ -3,10 +3,16 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+import sqlite3
+import json
 
 import httpx
 
 from app.main import create_app
+from app.models import WorkflowRun
+from app.config import get_settings
+from app.integrations import IntegrationManager
+from app.jobs import JobRunner
 
 
 class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
@@ -14,6 +20,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         os.environ["RELAYOPS_DB_PATH"] = f"{self.temp_dir.name}/test.db"
         self.app = create_app()
+        self.repository = self.app.state.repository
 
     def tearDown(self) -> None:
         os.environ.pop("RELAYOPS_DB_PATH", None)
@@ -156,6 +163,142 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         payload = response.json()
 
         self.assertGreaterEqual(len(payload), 3)
+
+    async def test_invalid_api_key_is_rejected(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/api/account", headers={"X-RelayOps-Api-Key": "bad-key"})
+
+        self.assertEqual(response.status_code, 401)
+
+    async def test_overview_is_scoped_to_current_account(self) -> None:
+        other = self.repository.create_account("Other Workspace", "other@relayops.app", "other-key")
+        seeded = self.repository.list_runs(self.repository.get_default_account().id)
+        run = WorkflowRun.model_validate(seeded[0].model_dump())
+        run.id = "otherrun1"
+        run.account_id = other.id
+        run.normalized.company = "Other Tenant Co"
+        self.repository.save_run(run)
+
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/api/overview", headers={"X-RelayOps-Api-Key": "other-key"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload["recent_runs"]), 1)
+        self.assertEqual(payload["recent_runs"][0]["normalized"]["company"], "Other Tenant Co")
+
+    async def test_jobs_are_scoped_to_current_account(self) -> None:
+        other = self.repository.create_account("Queue Workspace", "queue@relayops.app", "queue-key")
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.post(
+                "/api/workflows/execute",
+                headers={"X-RelayOps-Api-Key": "queue-key"},
+                json={
+                    "source": "hubspot",
+                    "company": "Queue Scoped",
+                    "contact_name": "Scoped User",
+                    "email": "scoped@example.com",
+                    "pain_points": ["Manual routing"],
+                    "requested_systems": ["HubSpot"],
+                    "monthly_revenue": "EUR 50k-70k",
+                    "urgency": "medium",
+                    "notes": "Queue scope verification.",
+                },
+            )
+            response = await client.get("/api/jobs", headers={"X-RelayOps-Api-Key": "queue-key"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload)
+        run_ids = {job["run_id"] for job in payload}
+        for run_id in run_ids:
+            stored = self.repository.get_run(run_id)
+            self.assertEqual(stored.account_id, other.id)
+
+    async def test_legacy_database_payload_is_upgraded_on_read(self) -> None:
+        legacy_dir = tempfile.TemporaryDirectory()
+        legacy_db = f"{legacy_dir.name}/legacy.db"
+        connection = sqlite3.connect(legacy_db)
+        connection.execute(
+            """
+            CREATE TABLE workflow_runs (
+                id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                source TEXT NOT NULL,
+                status TEXT NOT NULL,
+                score INTEGER NOT NULL,
+                payload_json TEXT NOT NULL
+            )
+            """
+        )
+        payload = {
+            "id": "legacy1",
+            "created_at": "2026-03-11T10:00:00Z",
+            "source": "hubspot",
+            "normalized": {
+                "company": "Legacy Co",
+                "contact_name": "Legacy User",
+                "email": "legacy@example.com",
+                "pain_points": ["Manual reporting"],
+                "requested_systems": ["HubSpot"],
+                "monthly_revenue": "EUR 40k-50k",
+                "urgency": "high",
+                "source": "hubspot",
+                "notes": "Legacy payload",
+            },
+            "score": 88,
+            "summary": "Legacy summary",
+            "actions": [],
+            "audit_events": [],
+            "sync_results": [],
+            "status": "completed",
+        }
+        connection.execute(
+            "INSERT INTO workflow_runs (id, created_at, source, status, score, payload_json) VALUES (?, ?, ?, ?, ?, ?)",
+            ("legacy1", "2026-03-11T10:00:00Z", "hubspot", "completed", 88, json.dumps(payload)),
+        )
+        connection.commit()
+        connection.close()
+
+        os.environ["RELAYOPS_DB_PATH"] = legacy_db
+        legacy_app = create_app()
+        legacy_runs = legacy_app.state.repository.list_runs()
+        self.assertEqual(legacy_runs[0].normalized.company, "Legacy Co")
+        self.assertTrue(legacy_runs[0].ai_analysis.highlights)
+        legacy_dir.cleanup()
+
+    async def test_worker_processes_jobs_when_web_mode_disabled(self) -> None:
+        os.environ["RELAYOPS_RUN_JOBS_IN_WEB"] = "0"
+        app = create_app()
+        repository = app.state.repository
+        settings = get_settings()
+        runner = JobRunner(repository, IntegrationManager(settings), poll_interval_ms=10)
+
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/workflows/execute",
+                json={
+                    "source": "hubspot",
+                    "company": "Worker Example",
+                    "contact_name": "Worker User",
+                    "email": "worker@example.com",
+                    "pain_points": ["Manual routing"],
+                    "requested_systems": ["HubSpot"],
+                    "monthly_revenue": "EUR 50k-70k",
+                    "urgency": "medium",
+                    "notes": "Worker verification.",
+                },
+            )
+
+        run_id = response.json()["id"]
+        await runner.process_pending_jobs(run_id)
+        run = repository.get_run(run_id)
+        self.assertIn(run.status, {"completed", "degraded"})
+        os.environ.pop("RELAYOPS_RUN_JOBS_IN_WEB", None)
 
 
 if __name__ == "__main__":

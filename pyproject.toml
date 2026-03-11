@@ -1,0 +1,13 @@
+[project]
+name = "relayops-ai"
+version = "0.1.0"
+description = "RelayOps AI workflow and integration platform demo"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.116.1",
+  "uvicorn==0.35.0",
+  "httpx==0.28.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

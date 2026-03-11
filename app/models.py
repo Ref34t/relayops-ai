@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class IntakePayload(BaseModel):
+    source: str = Field(..., examples=["hubspot"])
+    payload: dict[str, Any]
+
+
+class NormalizedRecord(BaseModel):
+    company: str
+    contact_name: str
+    email: str
+    pain_points: list[str]
+    requested_systems: list[str]
+    monthly_revenue: str
+    urgency: str
+    source: str
+    notes: str
+
+
+class WorkflowAction(BaseModel):
+    label: str
+    owner: str
+    system: str
+    priority: str
+
+
+class AuditEvent(BaseModel):
+    timestamp: datetime = Field(default_factory=utc_now)
+    stage: str
+    status: str
+    detail: str
+
+
+class SyncResult(BaseModel):
+    target: str
+    status: str
+    detail: str
+    latency_ms: int
+    request_id: str | None = None
+
+
+class WorkflowRun(BaseModel):
+    id: str
+    created_at: datetime = Field(default_factory=utc_now)
+    source: str
+    normalized: NormalizedRecord
+    score: int
+    summary: str
+    actions: list[WorkflowAction]
+    audit_events: list[AuditEvent]
+    sync_results: list[SyncResult]
+    status: str
+
+
+class WorkflowRequest(BaseModel):
+    source: str
+    company: str
+    contact_name: str
+    email: str
+    pain_points: list[str]
+    requested_systems: list[str]
+    monthly_revenue: str
+    urgency: str
+    notes: str = ""
+
+
+class OverviewMetric(BaseModel):
+    label: str
+    value: str
+    detail: str
+
+
+class OverviewResponse(BaseModel):
+    title: str
+    subtitle: str
+    metrics: list[OverviewMetric]
+    capabilities: list[str]
+    recent_runs: list[WorkflowRun]
+
+
+class HealthResponse(BaseModel):
+    status: str
+    timestamp: datetime = Field(default_factory=utc_now)
+    database: str
+    total_runs: int
+    completed_runs: int
+    sync_targets: int
+
+
+class IntegrationStatus(BaseModel):
+    provider: str
+    enabled: bool
+    mode: str
+    detail: str
+
+
+class IntegrationStatusResponse(BaseModel):
+    items: list[IntegrationStatus]

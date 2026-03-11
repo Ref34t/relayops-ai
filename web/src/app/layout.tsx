@@ -21,8 +21,8 @@ const displayFont = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "RelayOps Control Surface",
-  description: "Next.js frontend for the RelayOps AI workflow and integration platform.",
+  title: "RelayOps",
+  description: "Operations workflow platform for orchestrating requests, summaries, and downstream system execution.",
 };
 
 export default function RootLayout({

@@ -178,7 +178,7 @@ export function DashboardShell() {
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-lime-200/90">Workspace</p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">Session active.</h3>
                 <p className="mt-2 text-sm leading-6 text-white/65">
-                  You are signed in. Use the dashboard to track workflow intake, execution, and downstream updates.
+                  Use the dashboard to review workflow intake, execution status, and downstream system activity.
                 </p>
               </div>
               <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-lime-100">
@@ -186,7 +186,7 @@ export function DashboardShell() {
               </span>
             </div>
             <div className="rounded-[1.2rem] border border-white/10 bg-black/15 p-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">Current operator</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">Current workspace</p>
               <p className="mt-2 text-lg font-semibold text-white">{account?.email}</p>
               <p className="mt-1 text-sm text-white/50">{account?.name}</p>
             </div>
@@ -218,10 +218,10 @@ export function DashboardShell() {
                 </div>
                 <div className="space-y-4">
                   <h1 className="max-w-5xl font-[family-name:var(--font-display)] text-5xl leading-[0.9] tracking-[-0.05em] md:text-7xl">
-                    Operational workflows, integration status, and execution history in one workspace.
+                    Structured workflows, execution visibility, and connected systems in one workspace.
                   </h1>
                   <p className="max-w-3xl text-base leading-7 text-stone-700 md:text-lg">
-                    RelayOps captures inbound requests, structures the data, generates action-ready summaries, and tracks delivery across connected systems.
+                    RelayOps turns inbound requests into structured workflows, AI-assisted summaries, and tracked execution across connected systems.
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-3">
@@ -252,14 +252,14 @@ export function DashboardShell() {
                 <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-lime-200/80">
                     <Radar className="size-4" />
-                    Latest summary
+                    Workflow summary
                   </div>
                   <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">
                     {state.overview?.recent_runs[0]?.ai_analysis.executive_title ?? "Waiting for workflow context"}
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-white/70">
                     {state.overview?.recent_runs[0]?.summary ??
-                      "The latest workflow summary appears here once a request has been processed."}
+                      "A concise summary appears here after a workflow is processed."}
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -298,7 +298,7 @@ export function DashboardShell() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700/70">New workflow</p>
                     <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl tracking-[-0.04em]">
-                      Create a new operational request.
+                      Create a new workflow request.
                     </h2>
                   </div>
                   <Sparkles className="mt-1 size-5 text-emerald-700" />
@@ -420,10 +420,10 @@ export function DashboardShell() {
               <section className="rounded-[2rem] border border-stone-200 bg-[#0d1712] p-6 text-white shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-lime-200/75">Workspace overview</p>
                 <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl tracking-[-0.04em]">
-                  Live view of session, providers, and execution volume.
+                  Live view of workflow volume, provider status, and recent execution.
                 </h2>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-white/70">
-                  This workspace is active and ready. Use the dashboard for workflow submission, live activity review, and integration monitoring.
+                  Monitor intake, recent workflow activity, and provider readiness from one operational workspace.
                 </p>
                 <div className="mt-6 grid gap-4 md:grid-cols-3">
                   <DarkCard icon={<Bot className="size-4" />} title="Access" value="Signed in" />

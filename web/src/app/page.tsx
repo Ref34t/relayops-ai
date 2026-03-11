@@ -15,10 +15,10 @@ export default function LandingPage() {
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Operations automation</span>
               </div>
               <h1 className="mt-8 max-w-4xl font-[family-name:var(--font-display)] text-6xl leading-[0.92] tracking-[-0.05em] md:text-8xl">
-                Orchestrate operations across CRM, finance, and internal systems.
+                Turn messy operational requests into structured workflows.
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-7 text-white/70 md:text-lg">
-                RelayOps turns fragmented requests into structured workflows, decision-ready briefs, and visible downstream actions.
+                RelayOps ingests requests from CRM, Slack, forms, or APIs, normalizes the data, generates AI-assisted summaries, and tracks execution across connected systems.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/signin">
@@ -36,7 +36,7 @@ export default function LandingPage() {
             </div>
             <div className="grid gap-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-8 md:p-10">
               <LandingMetric icon={<Bot className="size-4" />} title="AI brief generation" text="Summaries, risk signals, and recommended next actions for every run." />
-              <LandingMetric icon={<Cable className="size-4" />} title="System connectivity" text="Coordinate updates across CRM, communications, and finance workflows." />
+              <LandingMetric icon={<Cable className="size-4" />} title="Connected systems" text="Coordinate execution across CRM, communications, finance, and internal tools." />
               <LandingMetric icon={<Radar className="size-4" />} title="Run visibility" text="Track execution health, sync outcomes, and audit activity in one place." />
               <LandingMetric icon={<ShieldCheck className="size-4" />} title="Secure access" text="Protected workspace sessions for dashboard and integration settings." />
             </div>
@@ -45,7 +45,7 @@ export default function LandingPage() {
 
         <section className="grid gap-4 md:grid-cols-3">
           <ValueCard title="Ingest" text="Capture inbound operational requests from connected tools and normalize the data." />
-          <ValueCard title="Orchestrate" text="Score urgency, route actions, and generate a clear operator brief." />
+          <ValueCard title="Orchestrate" text="Score urgency, route actions, and generate a clear workflow summary." />
           <ValueCard title="Synchronize" text="Push structured updates into downstream systems with visible execution status." />
         </section>
       </div>

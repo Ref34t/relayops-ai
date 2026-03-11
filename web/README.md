@@ -39,6 +39,13 @@ Open:
 
 - [http://localhost:3006](http://localhost:3006)
 
+Recommended flow:
+
+- `/` landing
+- `/signin` authentication
+- `/dashboard` protected workspace
+- `/settings` protected integrations
+
 ## Production Build Check
 
 ```bash
@@ -51,6 +58,16 @@ To run the production server locally after a build:
 ```bash
 RELAYOPS_BACKEND_URL=http://127.0.0.1:8022 npm run start -- --port 3006
 ```
+
+## Frontend Validation
+
+From the repository root:
+
+```bash
+npm run test:e2e
+```
+
+That suite verifies routing, sign-in, dashboard workflow submission, protected route behavior, and integration diagnostics.
 
 ## Session Behavior
 

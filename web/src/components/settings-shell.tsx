@@ -60,9 +60,9 @@ export function SettingsShell() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Integrations</p>
-              <h1 className="mt-3 font-[family-name:var(--font-display)] text-5xl tracking-[-0.04em]">Connection status across configured providers.</h1>
+              <h1 className="mt-3 font-[family-name:var(--font-display)] text-5xl tracking-[-0.04em]">Provider status across the current workspace.</h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-700">
-                Review provider availability, run quick checks, and confirm which credentials are loaded in the current environment.
+                Review configured providers, run diagnostics, and confirm which runtime values are loaded in the current environment.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -97,7 +97,7 @@ export function SettingsShell() {
           <div className="space-y-4 rounded-[1.8rem] border border-white/15 bg-[#0d1712] p-5 text-white shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
             <StatusCard icon={<Orbit className="size-4" />} title="Status" value={status} />
             <StatusCard icon={<Gauge className="size-4" />} title="API endpoint" value={apiBaseUrl() || "Same-origin proxy"} />
-            <StatusCard icon={<ShieldAlert className="size-4" />} title="Behavior" value="Providers that are not configured remain visible, but they do not affect workflow execution." />
+            <StatusCard icon={<ShieldAlert className="size-4" />} title="Behavior" value="Unavailable providers remain visible in settings, while workflow execution continues with the providers that are configured." />
           </div>
         </section>
 

@@ -44,6 +44,20 @@ RelayOps is designed for teams that work across multiple systems and need one pl
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    A["Landing / Sign-in (Next.js)"] --> B["Protected Dashboard & Settings"]
+    B --> C["Next.js API Proxy"]
+    C --> D["FastAPI Backend"]
+    D --> E["Normalization & Workflow Engine"]
+    D --> F["SQLite Repository"]
+    D --> G["Job Queue"]
+    G --> H["OpenAI"]
+    G --> I["Slack"]
+    G --> J["HubSpot"]
+    D --> K["Metrics / Tracing / Errors"]
+```
+
 ### Frontend
 
 - `web/src/app/page.tsx`: landing page
@@ -193,6 +207,20 @@ cd web
 npm run lint
 npm run build
 ```
+
+Browser flow:
+
+```bash
+npm run test:e2e
+```
+
+The frontend suite covers:
+
+- landing to sign-in to dashboard routing
+- protected route redirects
+- workflow submission from the dashboard
+- integration diagnostics in settings
+- Next.js proxy access to backend endpoints
 
 ## Key API Endpoints
 

@@ -72,15 +72,15 @@ export function SignInShell() {
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Workspace access</span>
           </div>
           <h1 className="mt-8 max-w-3xl font-[family-name:var(--font-display)] text-6xl leading-[0.92] tracking-[-0.05em] md:text-7xl">
-            Access the workspace and continue where operations are happening.
+            Sign in to review workflows, summaries, and connected systems.
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-white/68">
-            Sign in to review workflow activity, integration status, and execution history across connected systems.
+            RelayOps helps teams turn messy operational requests into structured workflows with clear execution visibility.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <FeatureCard title="Protected workspace" text="Session-based access for dashboard and settings." icon={<ShieldCheck className="size-4" />} />
             <FeatureCard title="Fast review path" text="Use the seeded account for immediate access." icon={<ArrowRight className="size-4" />} />
-            <FeatureCard title="Shared visibility" text="Review runs, sync outcomes, and connector status in one place." icon={<KeyRound className="size-4" />} />
+            <FeatureCard title="Shared visibility" text="Review workflow runs, sync outcomes, and provider status in one place." icon={<KeyRound className="size-4" />} />
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-3 text-sm text-white/58">
             <span>Demo workspace:</span>

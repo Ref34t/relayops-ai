@@ -27,15 +27,18 @@ class WorkflowRepository:
         MigrationManager(self._connect).apply()
         self.ensure_default_account()
 
-    def list_runs(self) -> list[WorkflowRun]:
+    def list_runs(self, account_id: str | None = None) -> list[WorkflowRun]:
+        query = """
+            SELECT payload_json
+            FROM workflow_runs
+        """
+        params: tuple = ()
+        if account_id:
+            query += " WHERE account_id = ?"
+            params = (account_id,)
+        query += " ORDER BY datetime(created_at) DESC, rowid DESC"
         with closing(self._connect()) as connection:
-            rows = connection.execute(
-                """
-                SELECT payload_json
-                FROM workflow_runs
-                ORDER BY datetime(created_at) DESC, rowid DESC
-                """
-            ).fetchall()
+            rows = connection.execute(query, params).fetchall()
         return [self._deserialize_run(row["payload_json"]) for row in rows]
 
     def save_run(self, run: WorkflowRun) -> WorkflowRun:
@@ -98,6 +101,19 @@ class WorkflowRepository:
         account = self.get_account_by_api_key(self.demo_api_key)
         if not account:
             return self.ensure_default_account()
+        return account
+
+    def create_account(self, name: str, email: str, api_key: str) -> Account:
+        account = Account(id=str(uuid4())[:8], name=name, email=email, api_key=api_key)
+        with closing(self._connect()) as connection:
+            connection.execute(
+                """
+                INSERT INTO accounts (id, name, email, api_key, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (account.id, account.name, account.email, account.api_key, account.created_at.isoformat()),
+            )
+            connection.commit()
         return account
 
     def get_account_by_api_key(self, api_key: str) -> Account | None:
@@ -185,16 +201,40 @@ class WorkflowRepository:
             )
             connection.commit()
 
-    def list_jobs(self, run_id: str | None = None) -> list[JobRecord]:
-        query = "SELECT payload_json FROM jobs"
+    def list_jobs(self, account_id: str | None = None, run_id: str | None = None) -> list[JobRecord]:
+        query = """
+            SELECT jobs.payload_json
+            FROM jobs
+            JOIN workflow_runs ON workflow_runs.id = jobs.run_id
+        """
         params: tuple = ()
+        clauses: list[str] = []
+        if account_id:
+            clauses.append("workflow_runs.account_id = ?")
+            params += (account_id,)
         if run_id:
-            query += " WHERE run_id = ?"
+            clauses.append("jobs.run_id = ?")
             params = (run_id,)
-        query += " ORDER BY datetime(created_at) DESC, rowid DESC"
+            if account_id:
+                params = (account_id, run_id)
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+        query += " ORDER BY datetime(jobs.created_at) DESC, jobs.rowid DESC"
         with closing(self._connect()) as connection:
             rows = connection.execute(query, params).fetchall()
         return [JobRecord.model_validate_json(row["payload_json"]) for row in rows]
+
+    def list_pending_run_ids(self) -> list[str]:
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT DISTINCT run_id
+                FROM jobs
+                WHERE status IN ('pending', 'processing')
+                ORDER BY datetime(created_at) ASC, rowid ASC
+                """
+            ).fetchall()
+        return [row["run_id"] for row in rows]
 
     def finalize_run_status(self, run_id: str) -> None:
         run = self.get_run(run_id)
@@ -219,24 +259,41 @@ class WorkflowRepository:
             ).model_dump()
         return WorkflowRun.model_validate(payload)
 
-    def health(self) -> HealthResponse:
+    def health(self, account_id: str | None = None) -> HealthResponse:
+        params: tuple = ()
+        runs_where = ""
+        jobs_where = ""
+        if account_id:
+            runs_where = " WHERE account_id = ?"
+            jobs_where = " WHERE workflow_runs.account_id = ? AND jobs.status IN ('pending', 'processing')"
+            params = (account_id,)
         with closing(self._connect()) as connection:
             row = connection.execute(
-                """
+                f"""
                 SELECT
                     COUNT(*) AS total_runs,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_runs
+                    SUM(CASE WHEN status IN ('completed', 'degraded') THEN 1 ELSE 0 END) AS completed_runs
                 FROM workflow_runs
-                """
+                {runs_where}
+                """,
+                params,
             ).fetchone()
             sync_targets = connection.execute(
-                """
+                f"""
                 SELECT COALESCE(SUM(json_array_length(json_extract(payload_json, '$.sync_results'))), 0) AS sync_targets
                 FROM workflow_runs
-                """
+                {runs_where}
+                """,
+                params,
             ).fetchone()
             queued_jobs = connection.execute(
-                "SELECT COUNT(*) AS queued_jobs FROM jobs WHERE status IN ('pending', 'processing')"
+                f"""
+                SELECT COUNT(*) AS queued_jobs
+                FROM jobs
+                JOIN workflow_runs ON workflow_runs.id = jobs.run_id
+                {jobs_where or "WHERE jobs.status IN ('pending', 'processing')"}
+                """,
+                params if account_id else (),
             ).fetchone()
         return HealthResponse(
             status="healthy" if int(queued_jobs["queued_jobs"] or 0) == 0 else "busy",

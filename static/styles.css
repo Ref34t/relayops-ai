@@ -436,6 +436,24 @@ h2 {
   border-radius: 28px;
 }
 
+.auth-layout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.button-cluster {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.button-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
 .workflow-form label,
 .auth-form label {
   display: grid;
@@ -492,6 +510,10 @@ h2 {
   .flow-grid,
   .runs-grid,
   .workflow-form {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-layout {
     grid-template-columns: 1fr;
   }
 

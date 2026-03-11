@@ -72,6 +72,13 @@ class WorkflowRun(BaseModel):
     status: str
 
 
+class SessionRecord(BaseModel):
+    id: str
+    account_id: str
+    created_at: datetime = Field(default_factory=utc_now)
+    expires_at: datetime
+
+
 class WorkflowRequest(BaseModel):
     source: str
     company: str
@@ -89,6 +96,7 @@ class Account(BaseModel):
     name: str
     email: str
     api_key: str
+    password_hash: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
 
 
@@ -99,6 +107,11 @@ class JobRecord(BaseModel):
     status: str
     detail: str
     attempts: int = 0
+    max_attempts: int = 3
+    available_at: datetime = Field(default_factory=utc_now)
+    locked_at: datetime | None = None
+    locked_by: str | None = None
+    last_error: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -144,3 +157,21 @@ class IntegrationCheckResponse(BaseModel):
 
 class AccountResponse(BaseModel):
     account: Account
+    auth_mode: str = "api_key"
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    account: Account
+    auth_mode: str
+    message: str

@@ -11,6 +11,11 @@ const authStatus = document.querySelector("#auth-status");
 const apiKeyInput = document.querySelector("#api-key-input");
 const workspaceName = document.querySelector("#workspace-name");
 const workspaceMode = document.querySelector("#workspace-mode");
+const loginForm = document.querySelector("#login-form");
+const loginStatus = document.querySelector("#login-status");
+const registerForm = document.querySelector("#register-form");
+const registerStatus = document.querySelector("#register-status");
+const logoutButton = document.querySelector("#logout-button");
 
 const API_KEY_STORAGE = "relayops_api_key";
 
@@ -19,27 +24,40 @@ function authHeaders() {
   return apiKey ? { "X-RelayOps-Api-Key": apiKey } : {};
 }
 
-function clearStoredKey() {
-  localStorage.removeItem(API_KEY_STORAGE);
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+    headers: {
+      ...(options.headers ?? {}),
+      ...authHeaders(),
+    },
+  });
+
+  if (response.status === 401 && localStorage.getItem(API_KEY_STORAGE)) {
+    localStorage.removeItem(API_KEY_STORAGE);
+    return fetch(url, { credentials: "same-origin", ...options });
+  }
+  return response;
 }
 
 async function loadAccount() {
-  let response = await fetch("/api/account", { headers: authHeaders() });
-  if (response.status === 401) {
-    clearStoredKey();
-    response = await fetch("/api/account");
-  }
+  const response = await apiFetch("/api/account");
   if (!response.ok) {
-    workspaceName.textContent = "Unauthorized";
-    workspaceMode.textContent = "Invalid key";
-    authStatus.textContent = "The stored API key is invalid. Re-enter a valid workspace key.";
+    workspaceName.textContent = "Unavailable";
+    workspaceMode.textContent = "Error";
     return;
   }
   const data = await response.json();
   workspaceName.textContent = data.account.name;
-  workspaceMode.textContent = data.account.api_key === "relayops-demo-key" ? "Demo workspace" : "Custom key";
+  const modeMap = {
+    session: "Session workspace",
+    api_key: "API key",
+    demo: "Demo workspace",
+  };
+  workspaceMode.textContent = modeMap[data.auth_mode] ?? data.auth_mode;
   if (!apiKeyInput.value) {
-    apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) ?? data.account.api_key;
+    apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) ?? "";
   }
 }
 
@@ -71,7 +89,7 @@ function renderHealth(item) {
     <article class="metric-card">
       <p class="metric-label">Persisted Runs</p>
       <strong class="metric-value">${item.total_runs}</strong>
-      <p class="metric-detail">${item.completed_runs} completed runs available for review.</p>
+      <p class="metric-detail">${item.completed_runs} completed or degraded runs available for review.</p>
     </article>
     <article class="metric-card">
       <p class="metric-label">Sync Targets</p>
@@ -153,20 +171,11 @@ function renderRuns(items) {
 }
 
 async function loadOverview() {
-  let [overviewResponse, healthResponse, integrationResponse] = await Promise.all([
-    fetch("/api/overview", { headers: authHeaders() }),
-    fetch("/api/health", { headers: authHeaders() }),
-    fetch("/api/integrations", { headers: authHeaders() }),
+  const [overviewResponse, healthResponse, integrationResponse] = await Promise.all([
+    apiFetch("/api/overview"),
+    apiFetch("/api/health"),
+    apiFetch("/api/integrations"),
   ]);
-
-  if ([overviewResponse, healthResponse, integrationResponse].some((response) => response.status === 401)) {
-    clearStoredKey();
-    [overviewResponse, healthResponse, integrationResponse] = await Promise.all([
-      fetch("/api/overview"),
-      fetch("/api/health"),
-      fetch("/api/integrations"),
-    ]);
-  }
 
   if (!overviewResponse.ok || !healthResponse.ok || !integrationResponse.ok) {
     subtitle.textContent = "The backend is unavailable. Start the local API and reload.";
@@ -207,28 +216,18 @@ form.addEventListener("submit", async (event) => {
     notes: formData.get("notes"),
   };
 
-  const response = await fetch("/api/workflows/execute", {
+  const response = await apiFetch("/api/workflows/execute", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      clearStoredKey();
-      authStatus.textContent = "Stored workspace key was invalid. Reverted to the demo workspace.";
-      await loadAccount();
-      await loadOverview();
-      formStatus.textContent = "Retry with a valid workspace key or use the demo workspace.";
-      return;
-    }
-    formStatus.textContent = "The workflow request failed. Check the backend and try again.";
+    formStatus.textContent = response.status === 429 ? "Rate limit hit. Wait a minute and try again." : "The workflow request failed. Check the backend and try again.";
     return;
   }
 
+  await loadAccount();
   await loadOverview();
   formStatus.textContent = "Workflow created. Scroll updated to the latest runs.";
   document.querySelector("#demo").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -242,10 +241,59 @@ authForm.addEventListener("submit", async (event) => {
     return;
   }
   localStorage.setItem(API_KEY_STORAGE, value);
-  authStatus.textContent = "Workspace key saved. Reloading workspace context...";
+  authStatus.textContent = "API key saved. Reloading workspace context...";
   await loadAccount();
   await loadOverview();
   authStatus.textContent = "Workspace context updated.";
+});
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  loginStatus.textContent = "Creating session...";
+  const payload = Object.fromEntries(new FormData(loginForm).entries());
+  const response = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    loginStatus.textContent = "Sign-in failed. Check your credentials.";
+    return;
+  }
+  localStorage.removeItem(API_KEY_STORAGE);
+  loginStatus.textContent = "Signed in.";
+  await loadAccount();
+  await loadOverview();
+});
+
+registerForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  registerStatus.textContent = "Creating workspace...";
+  const payload = Object.fromEntries(new FormData(registerForm).entries());
+  const response = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    registerStatus.textContent = response.status === 409 ? "That email already has a workspace." : "Workspace creation failed.";
+    return;
+  }
+  localStorage.removeItem(API_KEY_STORAGE);
+  registerForm.reset();
+  registerStatus.textContent = "Workspace created and signed in.";
+  await loadAccount();
+  await loadOverview();
+});
+
+logoutButton.addEventListener("click", async () => {
+  await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+  localStorage.removeItem(API_KEY_STORAGE);
+  authStatus.textContent = "Session cleared. Back to the demo workspace.";
+  await loadAccount();
+  await loadOverview();
 });
 
 loadAccount();

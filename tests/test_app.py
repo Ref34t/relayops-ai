@@ -19,11 +19,15 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         os.environ["RELAYOPS_DB_PATH"] = f"{self.temp_dir.name}/test.db"
+        os.environ["RELAYOPS_TRACE_EXPORTER"] = "disabled"
         self.app = create_app()
         self.repository = self.app.state.repository
 
     def tearDown(self) -> None:
         os.environ.pop("RELAYOPS_DB_PATH", None)
+        os.environ.pop("RELAYOPS_TRACE_EXPORTER", None)
+        os.environ.pop("RELAYOPS_RUN_JOBS_IN_WEB", None)
+        os.environ.pop("RELAYOPS_RATE_LIMIT_PER_MINUTE", None)
         self.temp_dir.cleanup()
 
     async def test_overview_exposes_seeded_runs(self) -> None:
@@ -139,6 +143,52 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(payload["account"]["email"], "demo@relayops.app")
         self.assertTrue(payload["account"]["api_key"])
+        self.assertEqual(payload["auth_mode"], "demo")
+
+    async def test_login_creates_session(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/auth/login",
+                json={"email": "demo@relayops.app", "password": "relayops-demo-pass"},
+            )
+            account = await client.get("/api/account")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(account.status_code, 200)
+        self.assertEqual(account.json()["auth_mode"], "session")
+
+    async def test_register_creates_account_and_session(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/auth/register",
+                json={"name": "Northstar Ops", "email": "ops@northstar.ai", "password": "northstar-secret"},
+            )
+            account = await client.get("/api/account")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["account"]["email"], "ops@northstar.ai")
+        self.assertEqual(account.json()["account"]["email"], "ops@northstar.ai")
+
+    async def test_logout_clears_session_and_returns_to_demo(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.post(
+                "/api/auth/register",
+                json={"name": "Northstar Ops", "email": "ops@northstar.ai", "password": "northstar-secret"},
+            )
+            before_logout = await client.get("/api/account")
+            logout = await client.post("/api/auth/logout")
+            after_logout = await client.get("/api/account")
+
+        self.assertEqual(before_logout.status_code, 200)
+        self.assertEqual(before_logout.json()["auth_mode"], "session")
+        self.assertEqual(logout.status_code, 200)
+        self.assertEqual(after_logout.status_code, 200)
+        self.assertEqual(after_logout.json()["auth_mode"], "demo")
+        self.assertEqual(after_logout.json()["account"]["email"], "demo@relayops.app")
 
     async def test_jobs_endpoint_exposes_queue_records(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
@@ -170,6 +220,25 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
             response = await client.get("/api/account", headers={"X-RelayOps-Api-Key": "bad-key"})
 
         self.assertEqual(response.status_code, 401)
+
+    async def test_metrics_endpoint_exposes_prometheus_output(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/metrics")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("relayops_http_requests_total", response.text)
+
+    async def test_rate_limit_returns_429(self) -> None:
+        os.environ["RELAYOPS_RATE_LIMIT_PER_MINUTE"] = "1"
+        app = create_app()
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            first = await client.get("/api/health", headers={"X-RelayOps-Api-Key": "relayops-demo-key"})
+            second = await client.get("/api/health", headers={"X-RelayOps-Api-Key": "relayops-demo-key"})
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 429)
 
     async def test_overview_is_scoped_to_current_account(self) -> None:
         other = self.repository.create_account("Other Workspace", "other@relayops.app", "other-key")
@@ -268,6 +337,11 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         legacy_runs = legacy_app.state.repository.list_runs()
         self.assertEqual(legacy_runs[0].normalized.company, "Legacy Co")
         self.assertTrue(legacy_runs[0].ai_analysis.highlights)
+        with sqlite3.connect(legacy_db) as migrated:
+            job_columns = {row[1] for row in migrated.execute("PRAGMA table_info(jobs)").fetchall()}
+            account_columns = {row[1] for row in migrated.execute("PRAGMA table_info(accounts)").fetchall()}
+        self.assertIn("max_attempts", job_columns)
+        self.assertIn("password_hash", account_columns)
         legacy_dir.cleanup()
 
     async def test_worker_processes_jobs_when_web_mode_disabled(self) -> None:
@@ -298,7 +372,6 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         await runner.process_pending_jobs(run_id)
         run = repository.get_run(run_id)
         self.assertIn(run.status, {"completed", "degraded"})
-        os.environ.pop("RELAYOPS_RUN_JOBS_IN_WEB", None)
 
 
 if __name__ == "__main__":

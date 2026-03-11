@@ -44,18 +44,58 @@
       <section class="ops-overview">
         <div class="section-heading">
           <p class="eyebrow">Workspace Access</p>
-          <h2>Explicit account context, not a hidden demo fallback.</h2>
+          <h2>Sign in with a real workspace session or use the API key override.</h2>
         </div>
-        <form id="auth-form" class="auth-form">
-          <label>
-            API Key
-            <input id="api-key-input" name="api_key" placeholder="relayops-demo-key" />
-          </label>
-          <div class="form-footer">
-            <p id="auth-status" class="form-status"></p>
-            <button type="submit" class="button button-secondary">Use workspace key</button>
-          </div>
-        </form>
+        <div class="auth-layout">
+          <form id="login-form" class="auth-form">
+            <p class="ops-heading">Session login</p>
+            <label>
+              Email
+              <input id="login-email" name="email" value="demo@relayops.app" type="email" required />
+            </label>
+            <label>
+              Password
+              <input id="login-password" name="password" value="relayops-demo-pass" type="password" required />
+            </label>
+            <div class="form-footer">
+              <p id="login-status" class="form-status"></p>
+              <button type="submit" class="button button-primary">Sign in</button>
+            </div>
+          </form>
+          <form id="register-form" class="auth-form">
+            <p class="ops-heading">Create workspace</p>
+            <label>
+              Workspace name
+              <input id="register-name" name="name" placeholder="Northstar Ops" required />
+            </label>
+            <label>
+              Email
+              <input id="register-email" name="email" type="email" placeholder="ops@northstar.ai" required />
+            </label>
+            <label>
+              Password
+              <input id="register-password" name="password" type="password" placeholder="Use 12+ characters" required />
+            </label>
+            <div class="form-footer">
+              <p id="register-status" class="form-status"></p>
+              <button type="submit" class="button button-secondary">Create account</button>
+            </div>
+          </form>
+          <form id="auth-form" class="auth-form">
+            <p class="ops-heading">Advanced API key override</p>
+            <label>
+              API Key
+              <input id="api-key-input" name="api_key" placeholder="relayops-demo-key" />
+            </label>
+            <div class="form-footer">
+              <p id="auth-status" class="form-status"></p>
+              <div class="button-cluster">
+                <button type="submit" class="button button-secondary">Use API key</button>
+                <button id="logout-button" type="button" class="button button-ghost">Sign out</button>
+              </div>
+            </div>
+          </form>
+        </div>
       </section>
 
       <section class="signal-strip">

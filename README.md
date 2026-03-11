@@ -1,6 +1,6 @@
-# RelayOps AI
+# RelayOps
 
-RelayOps AI is a SaaS-style portfolio project tailored to the 9H AI & Integration Specialist role. It demonstrates how messy operational data can be ingested from client systems, normalized, routed through workflow logic, and turned into decision-ready operational briefs.
+RelayOps is an AI-powered workflow and integration layer for operations teams working across fragmented business systems. It accepts messy inbound records, normalizes them into a consistent internal schema, orchestrates decision logic, and produces action-ready operational briefs with audit and sync visibility.
 
 ## Product summary
 
@@ -15,12 +15,15 @@ The MVP models a realistic business flow:
 - the frontend presents recent runs and a live workflow demo
 - workflow history is persisted in SQLite with audit and sync metadata
 
-## Why this project fits 9H
+## Features
 
-- AI workflows: generates concise operational briefs from normalized client data
-- Integrations mindset: models webhook intake, CRM sync, async task execution, and downstream notifications
-- Backend focus: FastAPI service with typed models, orchestration logic, and structured logging
-- Delivery thinking: polished UI that explains the architecture and shows the workflow in action
+- Webhook-style intake for fragmented business payloads
+- Normalization layer for inconsistent fields and incomplete data
+- Workflow scoring and action generation
+- Persistent run history backed by SQLite
+- Health reporting, audit trail, and sync visibility
+- Optional live integrations for OpenAI, Slack, and HubSpot
+- SaaS-style frontend for live demo and operational review
 
 ## Architecture
 
@@ -36,10 +39,11 @@ The MVP models a realistic business flow:
 
 ## Demo flow
 
-1. A messy lead or ops payload is received through a webhook endpoint.
+1. A webhook or intake payload arrives from a client system.
 2. The backend normalizes inconsistent field names and missing values.
-3. The workflow engine scores urgency, determines actions, and composes an AI-ready brief.
-4. A client dashboard visualizes recent workflow runs and operational recommendations.
+3. The workflow engine scores urgency, determines actions, and composes an operational brief.
+4. Optional integrations enrich the run with live summaries and downstream sync attempts.
+5. The dashboard visualizes recent runs, audit events, health, and sync outcomes.
 
 ## Stack
 
@@ -52,6 +56,8 @@ The MVP models a realistic business flow:
 ## Run locally
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8012
 ```
@@ -89,13 +95,14 @@ python3 -m compileall app
 
 - Intake layer: webhook-style ingestion for raw business payloads
 - Normalization layer: alias mapping and messy-data cleanup
-- Workflow layer: scoring, action generation, and AI-style brief creation
+- Workflow layer: scoring, action generation, and brief creation
 - Persistence layer: SQLite-backed workflow history
 - Ops layer: health reporting, audit events, and sync result tracking
 - Presentation layer: SaaS-style product interface with live workflow execution
 
-## Suggested portfolio framing
+## Use cases
 
-When presenting this project, position it as:
-
-> An AI-powered workflow and integration layer that unifies fragmented business inputs, cleans operational data, and produces action-ready briefs across client systems.
+- Lead and operations intake across multiple tools
+- Internal service delivery orchestration
+- AI-assisted summaries for operations teams
+- Downstream notifications and CRM sync visibility

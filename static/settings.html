@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RelayOps Settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero hero-compact">
+        <div class="hero-copy">
+          <p class="eyebrow">RelayOps Settings</p>
+          <h1>Connector readiness and local environment setup.</h1>
+          <p class="lede">Use this page to confirm which integrations are configured, run connector checks, and review the expected local environment variables.</p>
+          <div class="hero-actions">
+            <a href="/" class="button button-secondary">Back to product</a>
+            <button id="run-checks" class="button button-primary" type="button">Run connector checks</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="ops-overview">
+        <div class="section-heading">
+          <p class="eyebrow">Connector Status</p>
+          <h2>Configuration, diagnostics, and next actions.</h2>
+        </div>
+        <p id="settings-status" class="lede settings-status"></p>
+        <div id="settings-integrations" class="health-grid"></div>
+      </section>
+
+      <section class="architecture">
+        <div class="section-heading">
+          <p class="eyebrow">Local Setup</p>
+          <h2>Environment variables used by the live integration layer.</h2>
+        </div>
+        <div class="flow-grid settings-grid">
+          <article class="flow-card">
+            <span>01</span>
+            <h3>OpenAI</h3>
+            <p><code>OPENAI_API_KEY</code> enables live operational brief generation.</p>
+          </article>
+          <article class="flow-card">
+            <span>02</span>
+            <h3>Slack</h3>
+            <p><code>SLACK_WEBHOOK_URL</code> posts workflow briefs to a Slack channel.</p>
+          </article>
+          <article class="flow-card">
+            <span>03</span>
+            <h3>HubSpot</h3>
+            <p><code>HUBSPOT_PRIVATE_APP_TOKEN</code> syncs contacts into HubSpot CRM.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <script src="/static/settings.js" defer></script>
+  </body>
+</html>

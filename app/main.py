@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import get_settings
 from app.integrations import IntegrationManager
 from app.logging import configure_logging
-from app.models import HealthResponse, IntakePayload, IntegrationStatusResponse, OverviewMetric, OverviewResponse, WorkflowRequest
+from app.models import HealthResponse, IntakePayload, IntegrationCheckResponse, IntegrationStatusResponse, OverviewMetric, OverviewResponse, WorkflowRequest
 from app.repository import WorkflowRepository
 from app.services import DataNormalizer, WorkflowEngine, seed_requests
 
@@ -33,6 +33,10 @@ def create_app() -> FastAPI:
     @app.get("/")
     async def index() -> FileResponse:
         return FileResponse(static_dir / "index.html")
+
+    @app.get("/settings")
+    async def settings_page() -> FileResponse:
+        return FileResponse(static_dir / "settings.html")
 
 
     @app.get("/api/overview", response_model=OverviewResponse)
@@ -69,6 +73,10 @@ def create_app() -> FastAPI:
     @app.get("/api/integrations", response_model=IntegrationStatusResponse)
     async def integrations() -> IntegrationStatusResponse:
         return integration_manager.status()
+
+    @app.post("/api/integrations/check", response_model=IntegrationCheckResponse)
+    async def integrations_check() -> IntegrationCheckResponse:
+        return await integration_manager.check_integrations()
 
 
     @app.post("/api/webhooks/intake")

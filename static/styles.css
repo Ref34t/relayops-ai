@@ -89,6 +89,11 @@ body::before {
   padding: 48px 0 28px;
 }
 
+.hero-compact {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
 .eyebrow,
 .panel-kicker {
   text-transform: uppercase;
@@ -252,6 +257,16 @@ h2 {
   text-transform: capitalize;
 }
 
+.settings-status {
+  margin: 0 0 24px;
+}
+
+.settings-action {
+  margin: 14px 0 0;
+  color: var(--accent-warm);
+  line-height: 1.6;
+}
+
 .section-heading {
   margin-bottom: 24px;
 }
@@ -265,6 +280,10 @@ h2 {
 
 .flow-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.settings-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .health-grid {

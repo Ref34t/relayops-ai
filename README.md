@@ -23,6 +23,7 @@ The MVP models a realistic business flow:
 - Persistent run history backed by SQLite
 - Health reporting, audit trail, and sync visibility
 - Optional live integrations for OpenAI, Slack, and HubSpot
+- Dedicated settings page for connector diagnostics and setup guidance
 - SaaS-style frontend for live demo and operational review
 
 ## Architecture
@@ -64,6 +65,11 @@ uvicorn app.main:app --reload --port 8012
 
 Then open `http://127.0.0.1:8012`.
 
+Available pages:
+
+- `/` product dashboard
+- `/settings` integration settings and connector diagnostics
+
 ## Optional live integrations
 
 RelayOps supports optional live integrations through environment variables. Copy `.env.example` values into your local environment before starting the app.
@@ -76,6 +82,8 @@ RelayOps supports optional live integrations through environment variables. Copy
 
 If these variables are not set, the app keeps deterministic local behavior and marks integrations as disabled in the UI.
 
+Use `/settings` to run connector checks and detect obvious misconfiguration such as invalid HubSpot auth or malformed Slack webhook URLs.
+
 ## Validate locally
 
 ```bash
@@ -87,6 +95,8 @@ python3 -m compileall app
 
 - `GET /api/overview`
 - `GET /api/health`
+- `GET /api/integrations`
+- `POST /api/integrations/check`
 - `POST /api/webhooks/intake`
 - `POST /api/workflows/execute`
 - `GET /api/runs`

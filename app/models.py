@@ -102,7 +102,12 @@ class IntegrationStatus(BaseModel):
     enabled: bool
     mode: str
     detail: str
+    action: str | None = None
 
 
 class IntegrationStatusResponse(BaseModel):
+    items: list[IntegrationStatus]
+
+
+class IntegrationCheckResponse(BaseModel):
     items: list[IntegrationStatus]

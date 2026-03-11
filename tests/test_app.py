@@ -111,6 +111,17 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(payload["items"]), 3)
         self.assertTrue(all(item["enabled"] is False for item in payload["items"]))
 
+    async def test_integration_check_reports_disabled_without_env(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post("/api/integrations/check")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+
+        self.assertEqual(len(payload["items"]), 3)
+        self.assertTrue(all(item["mode"] == "disabled" for item in payload["items"]))
+
 
 if __name__ == "__main__":
     unittest.main()

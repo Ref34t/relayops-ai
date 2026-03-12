@@ -3,12 +3,10 @@ from __future__ import annotations
 import asyncio
 import time
 from contextlib import asynccontextmanager
-from pathlib import Path
 from uuid import uuid4
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -98,9 +96,6 @@ def create_app() -> FastAPI:
             run.account_id = account.id
             repository.save_run(run)
 
-    static_dir = Path(__file__).resolve().parent.parent / "static"
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
     def expose_account(account) -> PublicAccount:
         return PublicAccount(
             id=account.id,
@@ -111,9 +106,6 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def observability_and_throttling(request: Request, call_next):
-        if request.url.path.startswith("/static"):
-            return await call_next(request)
-
         trace_context = new_trace_context()
         request.state.request_id = trace_context.request_id
         request.state.trace_id = trace_context.trace_id
@@ -155,14 +147,6 @@ def create_app() -> FastAPI:
             status_code=500,
             content={"detail": "RelayOps hit an unexpected error.", "request_id": getattr(request.state, "request_id", None)},
         )
-
-    @app.get("/")
-    async def index() -> FileResponse:
-        return FileResponse(static_dir / "index.html")
-
-    @app.get("/settings")
-    async def settings_page() -> FileResponse:
-        return FileResponse(static_dir / "settings.html")
 
     @app.get("/metrics")
     async def metrics() -> Response:

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useEffect, useEffectEvent, useState } from "react";
+import { useState } from "react";
 import {
   Activity,
   ArrowRight,
@@ -19,21 +19,13 @@ import {
 
 import { Button } from "@/components/ui/button";
 import {
-  AccountResponse,
   API_KEY_STORAGE,
-  HealthResponse,
-  IntegrationItem,
-  OverviewResponse,
   WorkflowPayload,
   relayFetch,
 } from "@/lib/relayops";
+import type { DashboardInitialState } from "@/lib/server-relayops";
 
-type DashboardState = {
-  overview: OverviewResponse | null;
-  health: HealthResponse | null;
-  integrations: IntegrationItem[];
-  account: AccountResponse | null;
-};
+type DashboardState = DashboardInitialState;
 
 const emptyState: DashboardState = {
   overview: null,
@@ -42,10 +34,16 @@ const emptyState: DashboardState = {
   account: null,
 };
 
-export function DashboardShell() {
+const fallbackMetrics = [
+  { label: "Workflow Reliability", value: "--", detail: "Validation, audit trail, and stable processing paths." },
+  { label: "Persisted Runs", value: "--", detail: "Stored workflow history for review and follow-through." },
+  { label: "Sync Targets", value: "--", detail: "Connected systems available for downstream execution." },
+];
+
+export function DashboardShell({ initialState }: { initialState?: DashboardState }) {
   const router = useRouter();
-  const [state, setState] = useState<DashboardState>(emptyState);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<DashboardState>(initialState ?? emptyState);
+  const [loading, setLoading] = useState(false);
   const [workflowStatus, setWorkflowStatus] = useState("");
 
   async function load() {
@@ -82,16 +80,6 @@ export function DashboardShell() {
       router.refresh();
     }
   }
-
-  const loadEvent = useEffectEvent(async () => {
-    await load();
-  });
-
-  useEffect(() => {
-    startTransition(() => {
-      void loadEvent();
-    });
-  }, []);
 
   async function logout() {
     await relayFetch("/api/auth/logout", { method: "POST" });
@@ -138,6 +126,9 @@ export function DashboardShell() {
   const account = state.account?.account;
   const authMode = state.account?.auth_mode ?? "session";
   const enabledIntegrations = state.integrations.filter((item) => item.enabled).length;
+  const metrics = state.overview?.metrics?.length ? state.overview.metrics : fallbackMetrics;
+  const recentRuns = state.overview?.recent_runs ?? [];
+  const leadRun = recentRuns[0];
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(192,255,141,0.18),_transparent_22%),radial-gradient(circle_at_bottom_right,_rgba(17,88,54,0.16),_transparent_20%),linear-gradient(180deg,#07110c_0%,#101d17_28%,#efe7da_28%,#f7f3ec_100%)] text-stone-950">
@@ -152,8 +143,8 @@ export function DashboardShell() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-white/45">Workspace</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">{account?.name ?? "Loading workspace..."}</h2>
-              <p className="mt-2 text-sm text-white/55">{account?.email ?? "Fetching account context"}</p>
+              <h2 className="mt-2 min-h-[2.25rem] text-2xl font-semibold tracking-[-0.04em]">{account?.name ?? "RelayOps Workspace"}</h2>
+              <p className="mt-2 min-h-[1.25rem] text-sm text-white/55">{account?.email ?? "workspace@relayops.local"}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <RailMetric icon={<Activity className="size-4" />} label="Health" value={state.health?.status ?? "healthy"} />
@@ -216,7 +207,7 @@ export function DashboardShell() {
                   <span className="rounded-full border border-emerald-900/12 bg-emerald-100 px-3 py-1">Dashboard</span>
                   <span className="rounded-full border border-stone-300 bg-stone-100 px-3 py-1">{loading ? "Updating" : "Live"}</span>
                 </div>
-                <div className="space-y-4">
+                <div className="min-h-[15rem] space-y-4">
                   <h1 className="max-w-5xl font-[family-name:var(--font-display)] text-5xl leading-[0.9] tracking-[-0.05em] md:text-7xl">
                     Structured workflows, execution visibility, and connected systems in one workspace.
                   </h1>
@@ -225,7 +216,7 @@ export function DashboardShell() {
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-3">
-                  {(state.overview?.metrics ?? []).map((metric) => (
+                  {metrics.map((metric) => (
                     <div key={metric.label} className="rounded-[1.5rem] border border-stone-200 bg-[#faf7f1] p-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500">{metric.label}</p>
                       <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-stone-950">{metric.value}</p>
@@ -249,16 +240,16 @@ export function DashboardShell() {
               </div>
 
               <div className="relay-noise relative grid gap-3 bg-[#0d1712] p-6 text-white md:p-8">
-                <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+                <div className="min-h-[13rem] rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-lime-200/80">
                     <Radar className="size-4" />
                     Workflow summary
                   </div>
                   <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">
-                    {state.overview?.recent_runs[0]?.ai_analysis.executive_title ?? "Waiting for workflow context"}
+                    {leadRun?.ai_analysis.executive_title ?? "Awaiting recent workflow activity"}
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-white/70">
-                    {state.overview?.recent_runs[0]?.summary ??
+                    {leadRun?.summary ??
                       "A concise summary appears here after a workflow is processed."}
                   </p>
                 </div>
@@ -266,12 +257,12 @@ export function DashboardShell() {
                   <DarkCard
                     icon={<ShieldCheck className="size-4" />}
                     title="Risk posture"
-                    value={state.overview?.recent_runs[0]?.ai_analysis.risk_level ?? "stable"}
+                    value={leadRun?.ai_analysis.risk_level ?? "stable"}
                   />
                   <DarkCard
                     icon={<Waypoints className="size-4" />}
                     title="Source"
-                    value={state.overview?.recent_runs[0]?.source ?? "none"}
+                    value={leadRun?.source ?? "none"}
                   />
                   <DarkCard
                     icon={<Cable className="size-4" />}
@@ -378,8 +369,8 @@ export function DashboardShell() {
                     {loading ? "Updating" : `${state.overview?.recent_runs.length ?? 0} visible`}
                   </span>
                 </div>
-                <div className="mt-6 space-y-4">
-                  {(state.overview?.recent_runs ?? []).map((run) => (
+                <div className="mt-6 min-h-[42rem] space-y-4">
+                  {recentRuns.length ? recentRuns.map((run) => (
                     <article key={run.id} className="rounded-[1.8rem] border border-stone-200 bg-[#fcfbf7] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
@@ -410,7 +401,22 @@ export function DashboardShell() {
                         <RunList title="Sync results" items={run.sync_results.map((sync) => `${sync.target}: ${sync.status} in ${sync.latency_ms}ms`)} />
                       </div>
                     </article>
-                  ))}
+                  )) : (
+                    <div className="grid gap-4">
+                      {Array.from({ length: 3 }).map((_, index) => (
+                        <article key={index} className="rounded-[1.8rem] border border-stone-200 bg-[#fcfbf7] p-5 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
+                          <div className="h-5 w-32 rounded-full bg-stone-200" />
+                          <div className="mt-4 h-8 w-56 rounded-full bg-stone-200" />
+                          <div className="mt-3 h-4 w-40 rounded-full bg-stone-100" />
+                          <div className="mt-6 h-16 rounded-[1.2rem] bg-stone-100" />
+                          <div className="mt-5 grid gap-3 md:grid-cols-2">
+                            <div className="h-28 rounded-[1.2rem] bg-white" />
+                            <div className="h-28 rounded-[1.2rem] bg-white" />
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </section>
 

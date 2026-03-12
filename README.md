@@ -2,7 +2,7 @@
 
 RelayOps is an operations workflow platform that connects fragmented business inputs, structures the data, orchestrates follow-up actions, and tracks downstream execution across connected systems.
 
-It is built as a real product-shaped portfolio project:
+Core stack:
 
 - Next.js frontend with protected routes
 - FastAPI backend for workflow orchestration and integrations
@@ -11,7 +11,7 @@ It is built as a real product-shaped portfolio project:
 - queued background processing for provider work
 - integration diagnostics, protected runtime configuration visibility, and observability
 
-## Product Overview
+## Overview
 
 RelayOps is designed for teams that work across multiple systems and need one place to:
 
@@ -21,7 +21,7 @@ RelayOps is designed for teams that work across multiple systems and need one pl
 - generate clear workflow summaries
 - track integration outcomes across CRM, communication, and finance systems
 
-## Current Application Flow
+## Application Flow
 
 - `/` landing page
 - `/signin` workspace sign-in and workspace creation

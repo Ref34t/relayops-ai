@@ -86,19 +86,40 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="relative border-l border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-7 py-8 md:px-10 md:py-10">
-              <div className="relay-panel rounded-[2rem] border border-white/10 bg-white/6 p-6 text-white">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">Current frame</p>
-                <h2 className="mt-4 text-3xl font-semibold tracking-[-0.05em]">One layer between intake, workflow logic, and execution.</h2>
-                <p className="mt-4 max-w-xl text-sm leading-7 text-white/62">
-                  RelayOps is positioned as the operational layer that receives inbound requests, structures them, and
-                  keeps follow-through visible across systems.
-                </p>
-              </div>
+            <div className="relative overflow-hidden border-l border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-7 py-8 md:px-10 md:py-10">
+              <div className="pointer-events-none absolute inset-x-10 top-10 h-32 rounded-full bg-lime-300/12 blur-3xl" />
+              <div className="relative grid gap-5">
+                <div className="rounded-[2.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-lime-200/80">Current frame</p>
+                      <h2 className="mt-4 max-w-lg text-3xl font-semibold leading-tight tracking-[-0.05em] text-white md:text-[2.2rem]">
+                        One operational layer between intake, workflow logic, and execution.
+                      </h2>
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60">
+                      Product view
+                    </span>
+                  </div>
 
-              <div className="mt-5 grid gap-4">
+                  <p className="mt-5 max-w-2xl text-sm leading-7 text-white/68">
+                    RelayOps receives inbound requests, structures them into consistent workflow records, and keeps
+                    execution visible across the systems that operators already use.
+                  </p>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <FrameMetric label="Sources" value="CRM, Slack, forms, APIs" />
+                    <FrameMetric label="Core flow" value="Normalize, summarize, execute" />
+                    <FrameMetric label="Outcome" value="Tracked follow-through" />
+                  </div>
+                </div>
+
+                <div className="grid gap-4">
                 {signals.map((signal) => (
-                  <article key={signal.title} className="rounded-[1.5rem] border border-white/10 bg-black/18 p-5">
+                  <article
+                    key={signal.title}
+                    className="rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(0,0,0,0.22),rgba(255,255,255,0.03))] p-5 backdrop-blur"
+                  >
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-lime-200/80">
                       {signal.icon}
                       {signal.title}
@@ -106,6 +127,7 @@ export default function LandingPage() {
                     <p className="mt-3 text-sm leading-7 text-white/62">{signal.text}</p>
                   </article>
                 ))}
+                </div>
               </div>
             </div>
           </div>
@@ -140,5 +162,14 @@ function ValueCard({ title, text }: { title: string; text: string }) {
       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">{title}</p>
       <p className="mt-4 text-sm leading-7 text-stone-700">{text}</p>
     </article>
+  );
+}
+
+function FrameMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.3rem] border border-white/10 bg-black/18 px-4 py-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">{label}</p>
+      <p className="mt-3 text-sm leading-6 text-white/80">{value}</p>
+    </div>
   );
 }

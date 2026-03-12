@@ -3,8 +3,9 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
-import sqlite3
 import json
+import sqlite3
+from contextlib import closing
 
 import httpx
 
@@ -364,7 +365,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         legacy_runs = legacy_app.state.repository.list_runs()
         self.assertEqual(legacy_runs[0].normalized.company, "Legacy Co")
         self.assertTrue(legacy_runs[0].ai_analysis.highlights)
-        with sqlite3.connect(legacy_db) as migrated:
+        with closing(sqlite3.connect(legacy_db)) as migrated:
             job_columns = {row[1] for row in migrated.execute("PRAGMA table_info(jobs)").fetchall()}
             account_columns = {row[1] for row in migrated.execute("PRAGMA table_info(accounts)").fetchall()}
         self.assertIn("max_attempts", job_columns)

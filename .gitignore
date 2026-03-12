@@ -4,9 +4,8 @@
 __pycache__/
 *.pyc
 .DS_Store
-data/relayops.db
-data/e2e.db
-data/*.corrupt-*
+data/*
+!data/.gitkeep
 node_modules/
 test-results/
 playwright-report/

@@ -18,6 +18,8 @@ from app.jobs import JobRunner
 
 
 class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
+    DEMO_HEADERS = {"X-RelayOps-Api-Key": "relayops-demo-key"}
+
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         os.environ["RELAYOPS_DB_PATH"] = f"{self.temp_dir.name}/test.db"
@@ -37,7 +39,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
     async def test_overview_exposes_seeded_runs(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get("/api/overview")
+            response = await client.get("/api/overview", headers=self.DEMO_HEADERS)
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -51,6 +53,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/workflows/execute",
+                headers=self.DEMO_HEADERS,
                 json={
                     "source": "hubspot",
                     "company": "Atlas Retail Ops",
@@ -79,6 +82,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/webhooks/intake",
+                headers=self.DEMO_HEADERS,
                 json={
                     "source": "typeform",
                     "payload": {
@@ -106,7 +110,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
     async def test_health_reports_persisted_state(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get("/api/health")
+            response = await client.get("/api/health", headers=self.DEMO_HEADERS)
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -118,7 +122,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
     async def test_integrations_report_disabled_without_env(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get("/api/integrations")
+            response = await client.get("/api/integrations", headers=self.DEMO_HEADERS)
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -129,7 +133,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
     async def test_integration_check_reports_disabled_without_env(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.post("/api/integrations/check")
+            response = await client.post("/api/integrations/check", headers=self.DEMO_HEADERS)
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -137,17 +141,23 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(payload["items"]), 3)
         self.assertTrue(all(item["mode"] == "disabled" for item in payload["items"]))
 
-    async def test_account_endpoint_returns_demo_account(self) -> None:
+    async def test_account_endpoint_requires_authentication(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/api/account")
 
+        self.assertEqual(response.status_code, 401)
+
+    async def test_account_endpoint_returns_sanitized_account_for_api_key_auth(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/api/account", headers=self.DEMO_HEADERS)
+
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-
         self.assertEqual(payload["account"]["email"], "demo@relayops.app")
-        self.assertTrue(payload["account"]["api_key"])
-        self.assertEqual(payload["auth_mode"], "demo")
+        self.assertNotIn("api_key", payload["account"])
+        self.assertEqual(payload["auth_mode"], "api_key")
 
     async def test_login_creates_session(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
@@ -174,9 +184,10 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload["account"]["email"], "ops@northstar.ai")
+        self.assertNotIn("api_key", payload["account"])
         self.assertEqual(account.json()["account"]["email"], "ops@northstar.ai")
 
-    async def test_logout_clears_session_and_returns_to_demo(self) -> None:
+    async def test_logout_clears_session_and_requires_reauthentication(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             await client.post(
@@ -190,15 +201,14 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(before_logout.status_code, 200)
         self.assertEqual(before_logout.json()["auth_mode"], "session")
         self.assertEqual(logout.status_code, 200)
-        self.assertEqual(after_logout.status_code, 200)
-        self.assertEqual(after_logout.json()["auth_mode"], "demo")
-        self.assertEqual(after_logout.json()["account"]["email"], "demo@relayops.app")
+        self.assertEqual(after_logout.status_code, 401)
 
     async def test_jobs_endpoint_exposes_queue_records(self) -> None:
         transport = httpx.ASGITransport(app=self.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             await client.post(
                 "/api/workflows/execute",
+                headers=self.DEMO_HEADERS,
                 json={
                     "source": "hubspot",
                     "company": "Queue Example",
@@ -211,7 +221,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
                     "notes": "Queue verification.",
                 },
             )
-            response = await client.get("/api/jobs")
+            response = await client.get("/api/jobs", headers=self.DEMO_HEADERS)
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -261,6 +271,19 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         payload = response.json()
         self.assertEqual(len(payload["recent_runs"]), 1)
         self.assertEqual(payload["recent_runs"][0]["normalized"]["company"], "Other Tenant Co")
+
+    async def test_runtime_settings_require_session_authentication(self) -> None:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            api_key_response = await client.get("/api/integrations/runtime", headers=self.DEMO_HEADERS)
+            await client.post(
+                "/api/auth/login",
+                json={"email": "demo@relayops.app", "password": "relayops-demo-pass"},
+            )
+            session_response = await client.get("/api/integrations/runtime")
+
+        self.assertEqual(api_key_response.status_code, 401)
+        self.assertEqual(session_response.status_code, 200)
 
     async def test_jobs_are_scoped_to_current_account(self) -> None:
         other = self.repository.create_account("Queue Workspace", "queue@relayops.app", "queue-key")
@@ -359,6 +382,7 @@ class RelayOpsAppTests(unittest.IsolatedAsyncioTestCase):
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/workflows/execute",
+                headers=self.DEMO_HEADERS,
                 json={
                     "source": "hubspot",
                     "company": "Worker Example",

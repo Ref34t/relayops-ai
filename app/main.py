@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.auth import get_current_account, session_expiry, verify_password
+from app.auth import get_current_account, get_session_account, session_expiry, verify_password
 from app.config import get_settings
 from app.integrations import IntegrationManager
 from app.jobs import JobRunner
@@ -28,6 +28,7 @@ from app.models import (
     LoginRequest,
     OverviewMetric,
     OverviewResponse,
+    PublicAccount,
     RegisterRequest,
     WorkflowRequest,
 )
@@ -58,6 +59,8 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    if settings.app_env.lower() not in {"development", "local", "test"} and settings.session_secret == "relayops-session-secret":
+        raise RuntimeError("RELAYOPS_SESSION_SECRET must be set to a non-default value outside local development.")
     configure_logging(settings.log_format)
     setup_observability(settings)
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
@@ -76,7 +79,7 @@ def create_app() -> FastAPI:
         session_cookie=settings.session_cookie_name,
         max_age=settings.session_max_age_seconds,
         same_site="lax",
-        https_only=False,
+        https_only=settings.session_https_only,
     )
     repository = WorkflowRepository(settings.database_path, settings.demo_api_key, settings.demo_email, settings.demo_password)
     integration_manager = IntegrationManager(settings)
@@ -97,6 +100,14 @@ def create_app() -> FastAPI:
 
     static_dir = Path(__file__).resolve().parent.parent / "static"
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    def expose_account(account) -> PublicAccount:
+        return PublicAccount(
+            id=account.id,
+            name=account.name,
+            email=account.email,
+            created_at=account.created_at,
+        )
 
     @app.middleware("http")
     async def observability_and_throttling(request: Request, call_next):
@@ -164,7 +175,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=401, detail="Invalid email or password.")
         session = repository.create_session(account.id, session_expiry(settings))
         request.session["relayops_session_id"] = session.id
-        return AuthResponse(account=account, auth_mode="session", message="Workspace session created.")
+        return AuthResponse(account=expose_account(account), auth_mode="session", message="Workspace session created.")
 
     @app.post("/api/auth/register", response_model=AuthResponse)
     async def register(payload: RegisterRequest, request: Request) -> AuthResponse:
@@ -173,7 +184,7 @@ def create_app() -> FastAPI:
         account = repository.create_account(payload.name, payload.email, f"relayops-{uuid4().hex[:16]}", password=payload.password)
         session = repository.create_session(account.id, session_expiry(settings))
         request.session["relayops_session_id"] = session.id
-        return AuthResponse(account=account, auth_mode="session", message="Workspace created and signed in.")
+        return AuthResponse(account=expose_account(account), auth_mode="session", message="Workspace created and signed in.")
 
     @app.post("/api/auth/logout")
     async def logout(request: Request):
@@ -218,7 +229,7 @@ def create_app() -> FastAPI:
         return integration_manager.status()
 
     @app.get("/api/integrations/runtime", response_model=RuntimeSettingsResponse)
-    async def integrations_runtime(current_account=Depends(get_current_account)) -> RuntimeSettingsResponse:
+    async def integrations_runtime(current_account=Depends(get_session_account)) -> RuntimeSettingsResponse:
         return integration_manager.runtime_settings()
 
     @app.post("/api/integrations/check", response_model=IntegrationCheckResponse)
@@ -227,7 +238,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/account", response_model=AccountResponse)
     async def account(request: Request, current_account=Depends(get_current_account)) -> AccountResponse:
-        return AccountResponse(account=current_account, auth_mode=getattr(request.state, "auth_mode", "demo"))
+        return AccountResponse(account=expose_account(current_account), auth_mode=getattr(request.state, "auth_mode", "api_key"))
 
     @app.get("/api/jobs")
     async def jobs(current_account=Depends(get_current_account)):

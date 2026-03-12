@@ -25,9 +25,9 @@ export type AccountResponse = {
     id: string;
     name: string;
     email: string;
-    api_key: string;
+    created_at: string;
   };
-  auth_mode: "demo" | "session" | "api_key";
+  auth_mode: "session" | "api_key";
 };
 
 export type HealthResponse = {

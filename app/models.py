@@ -100,6 +100,13 @@ class Account(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+class PublicAccount(BaseModel):
+    id: str
+    name: str
+    email: str
+    created_at: datetime
+
+
 class JobRecord(BaseModel):
     id: str
     run_id: str
@@ -168,7 +175,7 @@ class RuntimeSettingsResponse(BaseModel):
 
 
 class AccountResponse(BaseModel):
-    account: Account
+    account: PublicAccount
     auth_mode: str = "api_key"
 
 
@@ -184,6 +191,6 @@ class RegisterRequest(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    account: Account
+    account: PublicAccount
     auth_mode: str
     message: str

@@ -73,6 +73,7 @@ That suite verifies routing, sign-in, dashboard workflow submission, protected r
 
 - the sign-in route creates a browser session through the backend
 - `/dashboard` and `/settings` require a valid session
+- route protection validates the session with the backend, not just cookie presence
 - unauthenticated access to protected routes redirects to `/signin`
 - authenticated access to `/signin` redirects to `/dashboard`
 

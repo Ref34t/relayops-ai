@@ -9,7 +9,7 @@ It is built as a real product-shaped portfolio project:
 - SQLite persistence with automatic local recovery
 - session-based auth plus API-key access
 - queued background processing for provider work
-- integration diagnostics, runtime configuration visibility, and observability
+- integration diagnostics, protected runtime configuration visibility, and observability
 
 ## Product Overview
 
@@ -26,7 +26,7 @@ RelayOps is designed for teams that work across multiple systems and need one pl
 - `/` landing page
 - `/signin` workspace sign-in and workspace creation
 - `/dashboard` protected operational workspace
-- `/settings` protected integration status and runtime configuration
+- `/settings` protected integration status and runtime verification
 - `/metrics` Prometheus metrics endpoint
 
 ## Core Capabilities
@@ -120,14 +120,21 @@ Recommended local routes:
 - password: `relayops-demo-pass`
 - API key: `relayops-demo-key`
 
+The demo account is seeded for local development convenience. Protected APIs still require either:
+
+- a valid browser session
+- or an explicit `X-RelayOps-Api-Key`
+
 ## Authentication Model
 
 - browser users sign in through `POST /api/auth/login`
 - successful login creates an HttpOnly session cookie
-- protected Next routes require a valid session
+- protected Next routes validate the session against the backend before rendering
 - `POST /api/auth/register` creates a new workspace and signs the user in
 - `POST /api/auth/logout` clears the session
 - backend APIs also accept `X-RelayOps-Api-Key` for non-browser usage
+- unauthenticated API requests return `401` instead of falling back to a demo workspace
+- browser-facing account payloads do not expose workspace API keys
 
 ## Integrations
 
@@ -149,7 +156,7 @@ The settings page shows:
 
 - provider availability
 - diagnostic results
-- masked runtime configuration values
+- masked runtime configuration values for signed-in browser sessions
 
 ## Worker Mode
 
@@ -169,11 +176,17 @@ Relevant settings:
 - `RELAYOPS_WORKER_POLL_INTERVAL_MS`
 - `RELAYOPS_RATE_LIMIT_PER_MINUTE`
 - `RELAYOPS_SESSION_SECRET`
+- `RELAYOPS_SESSION_HTTPS_ONLY`
 - `RELAYOPS_SESSION_MAX_AGE_SECONDS`
 - `RELAYOPS_LOG_FORMAT`
 - `RELAYOPS_TRACE_EXPORTER`
 - `RELAYOPS_OTLP_ENDPOINT`
 - `SENTRY_DSN`
+
+Security note:
+
+- set `RELAYOPS_SESSION_SECRET` to a unique value outside local development
+- `RELAYOPS_SESSION_HTTPS_ONLY` should remain enabled anywhere behind HTTPS
 
 ## Database and Migrations
 

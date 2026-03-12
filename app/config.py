@@ -24,6 +24,7 @@ def load_dotenv(dotenv_path: str = ".env") -> None:
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "RelayOps AI"
+    app_env: str = "development"
     database_path: Path = Path("data/relayops.db")
     demo_api_key: str = "relayops-demo-key"
     demo_email: str = "demo@relayops.app"
@@ -33,6 +34,7 @@ class Settings:
     log_format: str = "text"
     session_cookie_name: str = "relayops_session"
     session_secret: str = "relayops-session-secret"
+    session_https_only: bool = False
     session_max_age_seconds: int = 60 * 60 * 8
     rate_limit_per_minute: int = 60
     trace_exporter: str = "disabled"
@@ -57,6 +59,7 @@ def get_settings() -> Settings:
     if os.getenv("RELAYOPS_LOAD_DOTENV", "1") not in {"0", "false", "False"}:
         load_dotenv()
     return Settings(
+        app_env=os.getenv("RELAYOPS_ENV", "development"),
         database_path=Path(os.getenv("RELAYOPS_DB_PATH", "data/relayops.db")),
         demo_api_key=os.getenv("RELAYOPS_DEMO_API_KEY", "relayops-demo-key"),
         demo_email=os.getenv("RELAYOPS_DEMO_EMAIL", "demo@relayops.app"),
@@ -66,6 +69,9 @@ def get_settings() -> Settings:
         log_format=os.getenv("RELAYOPS_LOG_FORMAT", "text"),
         session_cookie_name=os.getenv("RELAYOPS_SESSION_COOKIE", "relayops_session"),
         session_secret=os.getenv("RELAYOPS_SESSION_SECRET", "relayops-session-secret"),
+        session_https_only=os.getenv("RELAYOPS_SESSION_HTTPS_ONLY", "").lower() in {"1", "true", "yes"}
+        if os.getenv("RELAYOPS_SESSION_HTTPS_ONLY")
+        else os.getenv("RELAYOPS_ENV", "development").lower() not in {"development", "local", "test"},
         session_max_age_seconds=int(os.getenv("RELAYOPS_SESSION_MAX_AGE_SECONDS", str(60 * 60 * 8))),
         rate_limit_per_minute=int(os.getenv("RELAYOPS_RATE_LIMIT_PER_MINUTE", "60")),
         trace_exporter=os.getenv("RELAYOPS_TRACE_EXPORTER", "disabled"),

@@ -51,5 +51,17 @@ async def get_current_account(
             return account
         request.session.pop("relayops_session_id", None)
 
-    request.state.auth_mode = "demo"
-    return repository.get_default_account()
+    raise HTTPException(status_code=401, detail="Authentication required.")
+
+
+async def get_session_account(request: Request) -> Account:
+    repository = request.app.state.repository
+    session_id = request.session.get("relayops_session_id")
+    if session_id:
+        account = repository.get_account_by_session(session_id)
+        if account:
+            request.state.auth_mode = "session"
+            return account
+        request.session.pop("relayops_session_id", None)
+
+    raise HTTPException(status_code=401, detail="Session authentication required.")
